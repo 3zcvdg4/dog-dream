@@ -33,10 +33,10 @@
     /* 层1: 背景图 */
     #bg-image {
       position: absolute;
-      top: -190px;
+      top: -5%;
       left: 0;
       width: 100%;
-      height: calc(100% + 240px);
+      height: 110%;
       object-fit: cover;
       z-index: 1;
     }
@@ -44,10 +44,10 @@
     /* 层2: 坐垫 */
     #cushion {
       position: absolute;
-      bottom: calc(10% + 20px + 40px + 50px);
+      bottom: 18%;
       left: 50%;
-      transform: translateX(-50%) scaleY(1.0);
-      width: 409px;
+      transform: translateX(-50%);
+      width: clamp(200px, 40vw, 409px);
       height: auto;
       z-index: 2;
     }
@@ -65,26 +65,32 @@
     /* 层4a: 梦泡 */
     #dream-bubble {
       position: absolute;
-      left: calc(50% - 17vw - 300px + 500px + 100px + 100px + 10px + 10px - 400px - 350px + 200px);
-      top: calc(20% + 500px - 300px + 20px);
-      width: clamp(198px, 29vw, 440px);
+      /* 水平居中，偏移到画面右上方区域 */
+      left: 50%;
+      transform: translateX(-50%);
+      /* 垂直位于画面上半部分偏下位置 */
+      top: 42%;
+      width: clamp(120px, 28vw, 440px);
       filter: contrast(1.1) brightness(1.05);
       height: auto;
       z-index: 5;
       cursor: pointer;
       opacity: 0;
-      pointer-events: all;
+      pointer-events: none;
     }
 
-    #dream-bubble.visible { opacity: 1; }
+    #dream-bubble.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
 
     #dream-bubble.breathing {
       animation: bubbleFloat 4s ease-in-out infinite;
     }
 
     @keyframes bubbleFloat {
-      0%, 100% { transform: translateY(0) scale(1); }
-      50%      { transform: translateY(-8px) scale(1.05); }
+      0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+      50%      { transform: translateX(-50%) translateY(-8px) scale(1.05); }
     }
 
     #dream-bubble:hover {
@@ -125,10 +131,10 @@
     /* 层4b: 文字 */
     #text-image {
       position: absolute;
-      top: calc(8% + 50px);
+      top: 8%;
       left: 50%;
-      transform: translateX(-50%) scale(1.44);
-      width: clamp(300px, 50vw, 800px);
+      transform: translateX(-50%);
+      width: clamp(200px, 45vw, 700px);
       height: auto;
       z-index: 5;
       opacity: 0;
@@ -141,8 +147,8 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(1.69); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.69); }
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
     /* 加载提示 */
@@ -325,6 +331,105 @@
       color: #555;
       border-color: #aaa;
     }
+
+    /* ════════════════════════════════
+       自适应 · 平板 & 手机
+    ════════════════════════════════ */
+    @media (max-width: 768px) {
+      /* 背景图：减少上下偏移 */
+      #bg-image {
+        top: 0;
+        height: 100%;
+      }
+
+      /* 文字缩小 */
+      #text-image {
+        width: clamp(160px, 55vw, 300px);
+        top: 5%;
+      }
+
+      /* 梦泡位置上调 */
+      #dream-bubble {
+        width: clamp(100px, 35vw, 280px);
+        top: 35%;
+      }
+
+      @keyframes bubbleFloat {
+        0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+        50%      { transform: translateX(-50%) translateY(-5px) scale(1.05); }
+      }
+
+      /* 坐垫缩小 */
+      #cushion {
+        width: clamp(140px, 45vw, 280px);
+        bottom: 22%;
+      }
+
+      /* 加载提示字号 */
+      #loading-hint {
+        font-size: 10px;
+      }
+
+      /* 简介面板：居中底部弹出 */
+      #info-panel {
+        top: auto;
+        bottom: 20%;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%);
+      }
+
+      #info-desc {
+        max-width: 220px;
+        font-size: 10px;
+      }
+
+      #info-enter-btn,
+      #info-back-btn {
+        font-size: 10px;
+        padding: 8px 20px;
+      }
+
+      /* 按钮增大触控区域 */
+      #wake-btn {
+        bottom: 20px;
+        right: 20px;
+        font-size: 10px;
+      }
+
+      #sleep-btn {
+        bottom: 12%;
+        padding: 10px 28px;
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #dream-bubble {
+        width: clamp(80px, 40vw, 160px);
+        top: 38%;
+      }
+
+      #cushion {
+        width: clamp(100px, 40vw, 180px);
+        bottom: 28%;
+      }
+
+      #text-image {
+        width: clamp(120px, 50vw, 200px);
+        top: 4%;
+      }
+
+      #info-panel {
+        bottom: 15%;
+      }
+
+      #info-enter-btn,
+      #info-back-btn {
+        padding: 8px 16px;
+        font-size: 9px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -471,8 +576,7 @@
       if (dogModel) {
         const breathe = Math.sin(elapsed * 0.785);
         dogModel.position.y = dogBaseY + breathe * 0.003;
-        // 梦泡同步浮动（只有上下，不缩放）
-        dreamBubble.style.transform = `translateY(${breathe * 4}px)`;
+        // 梦泡浮动全由 CSS animation 处理，不在 JS 插手
       }
 
       renderer.render(scene, camera);
@@ -805,6 +909,14 @@
         galRenderer.render(galScene, galCamera);
       }
       animateGallery();
+
+      // 画廊窗口大小变化时同步
+      window.addEventListener('resize', () => {
+        const w = window.innerWidth, h = window.innerHeight;
+        galCamera.aspect = w / h;
+        galCamera.updateProjectionMatrix();
+        galRenderer.setSize(w, h);
+      });
     }
 
     window.addEventListener('resize', () => {
