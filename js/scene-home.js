@@ -35,6 +35,7 @@ export class HomeScene {
     this.setupLights();
     this.loadDogModel();
     this.animate();
+    console.log('🎬 HomeScene initialized');
   }
 
   setupRenderer() {
@@ -267,8 +268,8 @@ export class HomeScene {
 
   updateSleepingAnimation(elapsed) {
     // 睡眠状态：温和的呼吸+轻微身体摆动
-    const breathe = Math.sin(elapsed * CONFIG.DOG_BREATHE_SPEED * 0.5) * 0.1; // 更慢的呼吸
-    this.dogModel.position.z += breathe * 0.01;
+    const breathe = Math.sin(elapsed * CONFIG.DOG_BREATHE_SPEED * 0.5) * 0.01;
+    this.dogModel.position.z = breathe;
     
     // 保持趴下姿态
     this.dogModel.rotation.x = 0.3;
