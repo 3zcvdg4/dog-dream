@@ -1,0 +1,412 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #ffffff;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ════════════════════════════════
+   首页 · 分层布局（从底到顶）
+════════════════════════════════ */
+#home-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  transition: opacity 1.4s ease;
+}
+
+#home-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 层1: 背景图 */
+#bg-image {
+  position: absolute;
+  top: -190px;
+  left: 0;
+  width: 100%;
+  height: calc(100% + 240px);
+  object-fit: cover;
+  z-index: 1;
+}
+
+/* 层2: 坐垫 */
+#cushion {
+  position: absolute;
+  bottom: calc(10% + 20px + 40px + 50px);
+  left: 50%;
+  transform: translateX(-50%) scaleY(1.0);
+  width: 409px;
+  height: auto;
+  z-index: 2;
+}
+
+/* 层3: Three.js 狗狗画布 */
+#dog-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* 层4a: 梦泡 */
+#dream-bubble {
+  position: absolute;
+  left: calc(50% - 17vw - 300px + 500px + 100px + 100px + 10px + 10px - 400px - 350px + 200px);
+  top: calc(20% + 500px - 300px + 20px);
+  width: clamp(198px, 29vw, 440px);
+  filter: contrast(1.1) brightness(1.05);
+  height: auto;
+  z-index: 5;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#dream-bubble.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#dream-bubble.breathing {
+  animation: bubbleFloat 4s ease-in-out infinite;
+}
+
+@keyframes bubbleFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-8px) scale(1.05); }
+}
+
+#dream-bubble:hover {
+  /* 无阴影 */
+}
+
+/* 梦泡破裂碎片容器 */
+#bubble-shards {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.shard {
+  position: fixed;
+  background-size: cover;
+  background-repeat: no-repeat;
+  border-radius: 2px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+@keyframes shardFly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.3);
+  }
+}
+
+/* 层4b: 文字 */
+#text-image {
+  position: absolute;
+  top: calc(8% + 50px);
+  left: 50%;
+  transform: translateX(-50%) scale(1.44);
+  width: clamp(300px, 50vw, 800px);
+  height: auto;
+  z-index: 5;
+  opacity: 0;
+  animation: fadeInOpacity 2s ease 1s forwards;
+}
+
+@keyframes fadeInOpacity {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(1.69); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.69); }
+}
+
+/* 加载提示 */
+#loading-hint {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: #ccc;
+  z-index: 6;
+  transition: opacity 0.8s ease;
+}
+
+#loading-hint.hidden { opacity: 0; }
+
+/* ════════════════════════════════
+   走廊
+════════════════════════════════ */
+#gallery-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.4s ease;
+}
+
+#gallery-screen.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#gallery-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* 醒来按钮 */
+#wake-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 40px;
+  z-index: 20;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #c0c0c0;
+  cursor: pointer;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.6s ease, color 0.3s ease;
+  pointer-events: none;
+  background: none;
+  border: none;
+  font-family: inherit;
+}
+
+#wake-btn.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#wake-btn:hover { color: #888; }
+
+/* 睡觉按钮 */
+#sleep-btn {
+  position: fixed;
+  bottom: calc(15% - 50px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: #999;
+  cursor: pointer;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.8s ease, color 0.3s ease;
+  pointer-events: none;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  padding: 8px 24px;
+  font-family: inherit;
+}
+
+#sleep-btn.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#sleep-btn:hover { color: #555; }
+
+/* ════════════════════════════════
+   画框简介面板
+════════════════════════════════ */
+#info-panel {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+#info-panel.on-left  { left: 5%; }
+#info-panel.on-right { right: 5%; }
+
+#info-panel.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#info-title {
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+#info-desc {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #999;
+  margin-bottom: 20px;
+  max-width: 260px;
+}
+
+#info-btn-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#info-enter-btn,
+#info-back-btn {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #888;
+  cursor: pointer;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 10px 28px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+#info-enter-btn:hover,
+#info-back-btn:hover {
+  color: #555;
+  border-color: #aaa;
+}
+
+/* 自适应设计 */
+@media (max-width: 768px) {
+  #cushion {
+    width: 300px;
+    bottom: calc(10% + 20px + 40px);
+  }
+
+  #dream-bubble {
+    width: clamp(150px, 40vw, 300px);
+  }
+
+  #text-image {
+    width: clamp(250px, 70vw, 600px);
+    transform: translateX(-50%) scale(1.2);
+  }
+
+  #wake-btn {
+    bottom: 20px;
+    right: 20px;
+    font-size: 10px;
+  }
+
+  #sleep-btn {
+    bottom: calc(10% - 30px);
+    padding: 6px 18px;
+    font-size: 11px;
+  }
+
+  #info-panel {
+    top: 60%;
+  }
+
+  #info-title {
+    font-size: 12px;
+  }
+
+  #info-desc {
+    font-size: 10px;
+    max-width: 200px;
+  }
+
+  #info-enter-btn,
+  #info-back-btn {
+    padding: 8px 20px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  #bg-image {
+    top: -100px;
+    height: calc(100% + 120px);
+  }
+
+  #cushion {
+    width: 250px;
+    bottom: calc(10% + 20px + 20px);
+  }
+
+  #dream-bubble {
+    width: clamp(120px, 50vw, 250px);
+  }
+
+  #text-image {
+    width: clamp(200px, 80vw, 400px);
+    transform: translateX(-50%) scale(1.0);
+  }
+
+  #loading-hint {
+    font-size: 10px;
+  }
+
+  #wake-btn {
+    bottom: 15px;
+    right: 15px;
+    font-size: 9px;
+  }
+
+  #sleep-btn {
+    bottom: calc(8% - 20px);
+    padding: 5px 15px;
+    font-size: 10px;
+  }
+
+  #info-panel {
+    top: 65%;
+    right: 10px;
+    left: auto;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  #info-title {
+    font-size: 11px;
+  }
+
+  #info-desc {
+    font-size: 9px;
+    max-width: 180px;
+  }
+
+  #info-btn-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #info-enter-btn,
+  #info-back-btn {
+    padding: 6px 16px;
+    font-size: 9px;
+  }
+}
