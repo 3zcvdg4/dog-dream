@@ -111,16 +111,18 @@ export class HomeScene {
       this.dogModel.rotation.z = CONFIG.DOG_ROTATION_Z;
 
       // 遍历模型，收集骨骼和材质
+      let boneCount = 0;
+      let meshCount = 0;
       this.dogModel.traverse(child => {
         if (child.isBone) {
           // 保存骨骼引用
           const name = child.name.toLowerCase();
           this.bones[name] = child;
-          
-          // 打印骨骼名称用于调试
-          console.log('Found bone:', child.name);
+          boneCount++;
+          console.log('🦴 Found bone:', child.name);
         }
         if (child.isMesh) {
+          meshCount++;
           // 处理材质（可能是数组）
           if (Array.isArray(child.material)) {
             child.material.forEach(mat => {
@@ -130,10 +132,7 @@ export class HomeScene {
               }
             });
           } else if (child.material) {
-            if (child.material.map) {
-              child.material.color.set(0xffffff);
-              child.material.needsUpdate = true;
-            } else if (child.material.color) {
+            if (child.material.color) {
               child.material.color.set(0xffffff);
               child.material.needsUpdate = true;
             } else {
@@ -146,11 +145,13 @@ export class HomeScene {
           }
         }
       });
+      console.log('✅ Model processed:', boneCount, 'bones,', meshCount, 'meshes');
 
       this.scene.add(this.dogModel);
 
       // 动画混合器仍然有用（如果有嵌入的动作）
       if (fbx.animations && fbx.animations.length > 0) {
+        console.log('📽️ Found', fbx.animations.length, 'animations');
         this.dogMixer = new THREE.AnimationMixer(this.dogModel);
       }
 
@@ -158,6 +159,7 @@ export class HomeScene {
       setTimeout(() => {
         this.dogState = 'walking';
         this.animationStartTime = this.clock.getElapsedTime();
+        console.log('🚶 Starting walk animation');
       }, 500);
 
       this.loadingHint.classList.add('hidden');
@@ -169,7 +171,7 @@ export class HomeScene {
         this.loadingHint.textContent = 'loading dream... ' + pct + '%';
       }
     }, (err) => {
-      console.error('狗狗加载失败:', err);
+      console.error('❌ 狗狗加载失败:', err);
       this.loadingHint.textContent = 'model load failed';
     });
   }
