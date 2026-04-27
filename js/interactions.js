@@ -5,18 +5,24 @@ export class Interactions {
     this.homeScene = homeScene;
     this.galleryScene = galleryScene;
 
+    this.dogVideo = document.getElementById('dog-video');
     this.dreamBubble = document.getElementById('dream-bubble');
     this.wakeBtn = document.getElementById('wake-btn');
     this.sleepBtn = document.getElementById('sleep-btn');
+    this.behaviorButtons = document.getElementById('behavior-buttons');
+    this.dreamScreen = document.getElementById('dream-screen');
     this.galleryScreen = document.getElementById('gallery-screen');
     this.bubbleShards = document.getElementById('bubble-shards');
 
+    this.state = 'initial-play'; // initial-play, dream-page, wakeup-play, interactive, sleeping
     this.galleryInited = false;
+
     this.setupEventListeners();
+    this.initVideo();
   }
 
   setupEventListeners() {
-    // 梦泡点击进入走廊
+    // 梦泡点击进入梦境
     this.dreamBubble.addEventListener('click', () => this.enterDream());
 
     // 醒来按钮
@@ -25,40 +31,90 @@ export class Interactions {
     // 睡觉按钮
     this.sleepBtn.addEventListener('click', () => this.goToSleep());
 
+    // 行为按钮
+    document.getElementById('sit-btn').addEventListener('click', () => this.playBehavior(0));
+    document.getElementById('play-btn').addEventListener('click', () => this.playBehavior(1));
+    document.getElementById('eat-btn').addEventListener('click', () => this.playBehavior(2));
+
     // 窗口大小改变
     window.addEventListener('resize', () => this.onResize());
   }
 
-  enterDream() {
-    this.homeScene.homeScreen.style.opacity = '0';
-    this.homeScene.homeScreen.style.pointerEvents = 'none';
+  initVideo() {
+    this.dogVideo.src = CONFIG.VIDEO_INITIAL_SRC;
+    this.dogVideo.addEventListener('ended', () => this.onInitialVideoEnd());
+    // 首次加载时隐藏 loading 提示
+    const onFirstLoad = () => {
+      if (this.homeScene.loadingHint) {
+        this.homeScene.loadingHint.classList.add('hidden');
+      }
+      this.dogVideo.play();
+      this.dogVideo.removeEventListener('loadeddata', onFirstLoad);
+    };
+    this.dogVideo.addEventListener('loadeddata', onFirstLoad);
+  }
 
-    setTimeout(() => {
-      this.galleryScreen.classList.add('visible');
-      this.wakeBtn.classList.add('visible');
-      this.initGallery();
-    }, 100);
+  onInitialVideoEnd() {
+    if (this.state === 'initial-play') {
+      this.dreamBubble.classList.add('visible');
+    }
+  }
+
+  enterDream() {
+    this.state = 'dream-page';
+    this.dreamBubble.classList.remove('visible');
+    this.dreamScreen.classList.add('visible');
+    this.wakeBtn.classList.add('visible');
   }
 
   wakeUp() {
-    this.galleryScreen.classList.remove('visible');
+    this.state = 'wakeup-play';
+    this.dreamScreen.classList.remove('visible');
     this.wakeBtn.classList.remove('visible');
 
-    this.homeScene.homeScreen.style.transition = 'opacity 1.4s ease';
-    this.homeScene.homeScreen.style.opacity = '1';
-    this.homeScene.homeScreen.style.pointerEvents = 'auto';
+    // 占位：播放醒来动画（目前用同一视频）
+    this.dogVideo.src = CONFIG.VIDEO_WAKEUP_SRC;
+    this.dogVideo.addEventListener('ended', () => this.onWakeupVideoEnd(), { once: true });
+    this.dogVideo.play();
+  }
 
-    setTimeout(() => this.bubbleShatter(), 500);
-    setTimeout(() => {
-      this.sleepBtn.classList.add('visible');
-    }, 500 + 1000);
+  onWakeupVideoEnd() {
+    this.state = 'interactive';
+    this.dogVideo.classList.add('interactive');
+    this.behaviorButtons.classList.add('visible');
+    this.sleepBtn.classList.add('visible');
+  }
+
+  playBehavior(index) {
+    if (this.state !== 'interactive') return;
+
+    // 占位：播放行为动画（目前用同一视频）
+    this.dogVideo.src = CONFIG.VIDEO_BEHAVIOR_SRCS[index];
+    this.dogVideo.addEventListener('ended', () => this.onBehaviorVideoEnd(), { once: true });
+    this.dogVideo.play();
+  }
+
+  onBehaviorVideoEnd() {
+    // 行为视频结束后，保持交互状态
   }
 
   goToSleep() {
+    this.state = 'sleeping';
+    this.behaviorButtons.classList.remove('visible');
     this.sleepBtn.classList.remove('visible');
-    this.dreamBubble.style.transition = 'opacity 1.5s ease';
-    this.dreamBubble.style.opacity = '1';
-    this.dreamBubble.style.pointerEvents = 'auto';
+    this.dogVideo.classList.remove('interactive');
+
+    // 占位：播放睡觉动画（目前用同一视频）
+    this.dogVideo.src = CONFIG.VIDEO_SLEEP_SRC;
+    this.dogVideo.addEventListener('ended', () => this.onSleepVideoEnd(), { once: true });
+    this.dogVideo.play();
+  }
+
+  onSleepVideoEnd() {
+    this.state = 'initial-play';
+    this.dogVideo.src = CONFIG.VIDEO_INITIAL_SRC;
+    this.dogVideo.addEventListener('ended', () => this.onInitialVideoEnd(), { once: true });
+    this.dogVideo.play();
   }
 
   initGallery() {
@@ -123,6 +179,8 @@ export class Interactions {
 
   onResize() {
     this.homeScene.onResize();
-    this.galleryScene.onResize();
+    if (this.galleryScene) {
+      this.galleryScene.onResize();
+    }
   }
 }

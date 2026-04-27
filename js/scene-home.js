@@ -1,285 +1,209 @@
-import * as THREE from 'three';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { CONFIG } from './config.js';
 
 export class HomeScene {
   constructor() {
     this.dogCanvas = document.getElementById('dog-canvas');
+    this.video = document.getElementById('dog-video');
     this.homeScreen = document.getElementById('home-screen');
     this.dreamBubble = document.getElementById('dream-bubble');
     this.loadingHint = document.getElementById('loading-hint');
 
-    this.renderer = null;
-    this.scene = null;
-    this.camera = null;
-    this.dogMixer = null;
-    this.dogModel = null;
-    this.dogBaseY = 0;
-    this.clock = new THREE.Clock();
-    
-    // 骨骼动画相关
-    this.bones = {};
-    this.dogState = 'idle'; // idle, walking, lyingDown, sleeping
-    this.animationStartTime = 0;
-    this.dogStartX = 4; // 右侧起点
-    this.dogTargetX = 0; // 中间目标
-    this.dogWalkDuration = 3.5; // 走路耗时（秒）
+    // 色度抠图相关
+    this.ctx = null;
+    this.bgColor = null;       // 自动检测的背景色
+    this.bgColorDetected = false;
+    this.videoReady = false;
+
+    // 视频宽高比
+    this.videoAspectRatio = 1;
+
+    // 梦泡浮动
+    this.clock = 0;
 
     this.init();
   }
 
   init() {
-    this.setupRenderer();
-    this.setupScene();
-    this.setupCamera();
-    this.setupLights();
-    this.loadDogModel();
+    this.setupCanvas();
+    this.detectBgColor();
     this.animate();
-    console.log('🎬 HomeScene initialized');
+    console.log('🎬 HomeScene initialized (video chroma key mode)');
   }
 
-  setupRenderer() {
-    this.renderer = new THREE.WebGLRenderer({
-      canvas: this.dogCanvas,
-      antialias: true,
-      alpha: true
-    });
-    this.renderer.setClearColor(0x000000, 0);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+  setupCanvas() {
+    // 设置 canvas 尺寸与视频区域匹配
+    this.dogCanvas.width = 420;
+    this.dogCanvas.height = 420;
+    this.ctx = this.dogCanvas.getContext('2d', { willReadFrequently: true });
   }
 
-  setupScene() {
-    this.scene = new THREE.Scene();
+  detectBgColor() {
+    // 等待视频加载后自动检测背景色
+    const tryDetect = () => {
+      if (this.video.readyState >= 2 && this.video.videoWidth > 0) {
+        // 记录视频原始宽高比
+        this.videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
+
+        // 创建一个临时 canvas 采样视频像素
+        const vw = this.video.videoWidth;
+        const vh = this.video.videoHeight;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = vw;
+        tempCanvas.height = vh;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(this.video, 0, 0, vw, vh);
+
+        // 采样多个边缘点，取平均值作为背景色
+        const samplePoints = [
+          // 四角
+          { x: 0, y: 0 },
+          { x: vw - 1, y: 0 },
+          { x: 0, y: vh - 1 },
+          { x: vw - 1, y: vh - 1 },
+          // 四边中点
+          { x: Math.floor(vw / 2), y: 0 },
+          { x: Math.floor(vw / 2), y: vh - 1 },
+          { x: 0, y: Math.floor(vh / 2) },
+          { x: vw - 1, y: Math.floor(vh / 2) },
+        ];
+
+        let r = 0, g = 0, b = 0;
+        samplePoints.forEach(p => {
+          const pixel = tempCtx.getImageData(p.x, p.y, 1, 1).data;
+          r += pixel[0];
+          g += pixel[1];
+          b += pixel[2];
+        });
+        r = Math.round(r / samplePoints.length);
+        g = Math.round(g / samplePoints.length);
+        b = Math.round(b / samplePoints.length);
+
+        this.bgColor = { r, g, b };
+        this.bgColorDetected = true;
+        this.videoReady = true;
+        console.log(`🎨 检测到背景色: RGB(${r}, ${g}, ${b})`);
+      } else {
+        setTimeout(tryDetect, 200);
+      }
+    };
+    tryDetect();
   }
 
-  setupCamera() {
-    this.camera = new THREE.PerspectiveCamera(
-      CONFIG.CAMERA_FOV,
-      window.innerWidth / window.innerHeight,
-      CONFIG.CAMERA_NEAR,
-      CONFIG.CAMERA_FAR
-    );
-    this.camera.position.set(
-      CONFIG.CAMERA_POSITION.x,
-      CONFIG.CAMERA_POSITION.y,
-      CONFIG.CAMERA_POSITION.z
-    );
-    this.camera.lookAt(0, 0, 0);
+  /**
+   * 判断像素是否在排除区域内
+   */
+  isInExcludeZone(x, y) {
+    const zones = CONFIG.CHROMA_KEY_EXCLUDE_ZONES || [];
+    for (const zone of zones) {
+      if (x >= zone.x && x < zone.x + zone.w &&
+          y >= zone.y && y < zone.y + zone.h) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  setupLights() {
-    this.scene.add(new THREE.AmbientLight(0xffffff, CONFIG.AMBIENT_LIGHT_INTENSITY));
+  chromaKeyFrame() {
+    if (!this.ctx || !this.videoReady || !this.video.videoWidth) return;
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, CONFIG.DIR_LIGHT_INTENSITY);
-    dirLight.position.set(
-      CONFIG.DIR_LIGHT_POSITION.x,
-      CONFIG.DIR_LIGHT_POSITION.y,
-      CONFIG.DIR_LIGHT_POSITION.z
-    );
-    this.scene.add(dirLight);
+    const cw = this.dogCanvas.width;
+    const ch = this.dogCanvas.height;
 
-    const fillLight = new THREE.DirectionalLight(0xffffff, CONFIG.FILL_LIGHT_INTENSITY);
-    fillLight.position.set(
-      CONFIG.FILL_LIGHT_POSITION.x,
-      CONFIG.FILL_LIGHT_POSITION.y,
-      CONFIG.FILL_LIGHT_POSITION.z
-    );
-    this.scene.add(fillLight);
-  }
+    // 清空 canvas（透明）
+    this.ctx.clearRect(0, 0, cw, ch);
 
-  loadDogModel() {
-    const loader = new FBXLoader();
+    // 保持视频宽高比绘制（contain 模式：完整显示视频内容，留白区域透明）
+    const videoAspect = this.videoAspectRatio;
+    const canvasAspect = cw / ch;
 
-    loader.load('./assets/20260424145443_b12751bf.fbx', (fbx) => {
-      this.dogModel = fbx;
+    let dx, dy, dw, dh;
+    if (videoAspect > canvasAspect) {
+      // 视频更宽：按宽度适配，上下留白
+      dw = cw;
+      dh = cw / videoAspect;
+      dx = 0;
+      dy = (ch - dh) / 2;
+    } else {
+      // 视频更高：按高度适配，左右留白
+      dh = ch;
+      dw = ch * videoAspect;
+      dx = (cw - dw) / 2;
+      dy = 0;
+    }
 
-      const box = new THREE.Box3().setFromObject(this.dogModel);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = CONFIG.DOG_SCALE_FACTOR / maxDim;
-      const dogScale = scale * 0.7;
+    // 步骤1: 先将视频帧绘制到 canvas
+    this.ctx.drawImage(this.video, 0, 0, this.video.videoWidth, this.video.videoHeight, dx, dy, dw, dh);
 
-      this.dogModel.scale.setScalar(dogScale);
-      this.dogModel.position.sub(center.multiplyScalar(scale));
-      this.dogModel.position.x = this.dogStartX; // 从右侧开始
-      this.dogModel.position.y += size.y * scale * 0.5 + CONFIG.DOG_POSITION_Y_OFFSET;
-      this.dogBaseY = this.dogModel.position.y;
+    // 步骤2: 获取像素数据，创建 alpha 蒙版
+    const imageData = this.ctx.getImageData(0, 0, cw, ch);
+    const data = imageData.data;
 
-      this.dogModel.rotation.y = CONFIG.DOG_ROTATION_Y;
-      this.dogModel.rotation.z = CONFIG.DOG_ROTATION_Z;
+    const bg = this.bgColor;
+    const tolerance = CONFIG.CHROMA_KEY_TOLERANCE;
 
-      // 遍历模型，收集骨骼和材质
-      let boneCount = 0;
-      let meshCount = 0;
-      this.dogModel.traverse(child => {
-        if (child.isBone) {
-          // 保存骨骼引用
-          const name = child.name.toLowerCase();
-          this.bones[name] = child;
-          boneCount++;
-          console.log('🦴 Found bone:', child.name);
-        }
-        if (child.isMesh) {
-          meshCount++;
-          // 处理材质（可能是数组）
-          if (Array.isArray(child.material)) {
-            child.material.forEach(mat => {
-              if (mat && mat.color) {
-                mat.color.set(0xffffff);
-                mat.needsUpdate = true;
-              }
-            });
-          } else if (child.material) {
-            if (child.material.color) {
-              child.material.color.set(0xffffff);
-              child.material.needsUpdate = true;
-            } else {
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                roughness: 0.9,
-                metalness: 0.0,
-              });
-            }
-          }
-        }
+    // 创建一个 alpha 蒙版：背景像素设为透明，非背景像素保持不透明
+    for (let i = 0; i < data.length; i += 4) {
+      const px = (i / 4) % cw;
+      const py = Math.floor(i / 4 / cw);
+
+      // 如果在排除区域内（如狗狗眼睛），跳过抠图
+      if (this.isInExcludeZone(px, py)) {
+        continue;
+      }
+
+      const dr = data[i] - bg.r;
+      const dg = data[i + 1] - bg.g;
+      const db = data[i + 2] - bg.b;
+      const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+
+      if (dist < tolerance) {
+        // 背景像素：完全透明
+        data[i + 3] = 0;
+      } else if (dist < tolerance + 20) {
+        // 边缘过渡：半透明平滑
+        const alpha = (dist - tolerance) / 20;
+        data[i + 3] = Math.round(alpha * 255);
+      }
+      // 其他像素保持不透明
+    }
+
+    // 步骤3: 将修改后的像素数据放回 canvas
+    this.ctx.putImageData(imageData, 0, 0);
+
+    // 调试模式：绘制排除区域边界
+    if (CONFIG.CHROMA_KEY_DEBUG) {
+      const zones = CONFIG.CHROMA_KEY_EXCLUDE_ZONES || [];
+      this.ctx.strokeStyle = 'red';
+      this.ctx.lineWidth = 2;
+      zones.forEach(zone => {
+        this.ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
       });
-      console.log('✅ Model processed:', boneCount, 'bones,', meshCount, 'meshes');
-
-      this.scene.add(this.dogModel);
-
-      // 动画混合器仍然有用（如果有嵌入的动作）
-      if (fbx.animations && fbx.animations.length > 0) {
-        console.log('📽️ Found', fbx.animations.length, 'animations');
-        this.dogMixer = new THREE.AnimationMixer(this.dogModel);
-      }
-
-      // 触发初始动作状态转移
-      setTimeout(() => {
-        this.dogState = 'walking';
-        this.animationStartTime = this.clock.getElapsedTime();
-        console.log('🚶 Starting walk animation');
-      }, 500);
-
-      this.loadingHint.classList.add('hidden');
-      setTimeout(() => this.dreamBubble.classList.add('visible'), CONFIG.DREAM_BUBBLE_DELAY);
-
-    }, (progress) => {
-      if (progress.total > 0) {
-        const pct = Math.round(progress.loaded / progress.total * 100);
-        this.loadingHint.textContent = 'loading dream... ' + pct + '%';
-      }
-    }, (err) => {
-      console.error('❌ 狗狗加载失败:', err);
-      this.loadingHint.textContent = 'model load failed';
-    });
+    }
   }
 
   animate() {
     requestAnimationFrame(() => this.animate());
-    const delta = this.clock.getDelta();
-    const elapsed = this.clock.getElapsedTime();
 
-    if (this.dogMixer) this.dogMixer.update(delta);
-    
-    if (this.dogModel) {
-      // 处理骨骼动画状态机
-      const stateElapsed = elapsed - this.animationStartTime;
-      
-      if (this.dogState === 'walking') {
-        this.updateWalkingAnimation(stateElapsed);
-      } else if (this.dogState === 'lyingDown') {
-        this.updateLyingDownAnimation(stateElapsed);
-      } else if (this.dogState === 'sleeping') {
-        this.updateSleepingAnimation(elapsed);
-      } else if (this.dogState === 'idle') {
-        // 呼吸动画
-        const breathe = Math.sin(elapsed * CONFIG.DOG_BREATHE_SPEED);
-        this.dogModel.position.y = this.dogBaseY + breathe * CONFIG.DOG_BREATHE_AMPLITUDE;
-      }
+    const elapsed = performance.now() / 1000;
 
-      // 梦泡同步浮动
+    // 如果视频还没准备好，尝试检测背景色
+    if (!this.bgColorDetected && this.video.readyState >= 2) {
+      this.detectBgColor();
+    }
+
+    // 执行色度抠图
+    if (this.videoReady && this.video.readyState >= 2 && !this.video.paused) {
+      this.chromaKeyFrame();
+    }
+
+    // 梦泡浮动
+    if (this.dreamBubble) {
       const breathe = Math.sin(elapsed * CONFIG.DOG_BREATHE_SPEED);
       this.dreamBubble.style.transform = `translateY(${breathe * CONFIG.BUBBLE_FLOAT_AMPLITUDE}px)`;
     }
-
-    this.renderer.render(this.scene, this.camera);
   }
-
-  updateWalkingAnimation(elapsed) {
-    // 走路阶段
-    const walkProgress = Math.min(elapsed / this.dogWalkDuration, 1);
-    
-    // 沿 X 轴从右侧移到中间
-    const newX = this.dogStartX + (this.dogTargetX - this.dogStartX) * walkProgress;
-    this.dogModel.position.x = newX;
-    
-    // 腿部摆动：周期性摆动前后腿
-    const legSwing = Math.sin(elapsed * Math.PI * 2 / 0.8) * 0.3; // 0.8秒一个周期
-    
-    // 脊柱轻微摆动
-    const spineSwing = Math.sin(elapsed * Math.PI * 2 / 0.8) * 0.1;
-    
-    // 尝试更新关键骨骼
-    for (const [boneName, bone] of Object.entries(this.bones)) {
-      if (boneName.includes('leg') || boneName.includes('hind')) {
-        // 后腿摆动
-        bone.rotation.x = legSwing;
-      } else if (boneName.includes('spine') || boneName.includes('chest')) {
-        // 脊柱摆动
-        bone.rotation.z = spineSwing;
-      }
-    }
-    
-    // 走路结束后进入趴下状态
-    if (walkProgress >= 1) {
-      this.dogState = 'lyingDown';
-      this.animationStartTime = this.clock.getElapsedTime();
-    }
-  }
-
-  updateLyingDownAnimation(elapsed) {
-    // 趴下阶段（2秒内逐渐放低）
-    const lyingProgress = Math.min(elapsed / 2.0, 1);
-    
-    // 垂直位置逐渐下降
-    const lyingDownAmount = lyingProgress * 0.8; // 最多下降 0.8 个单位
-    this.dogModel.position.y = this.dogBaseY - lyingDownAmount;
-    
-    // 旋转角度逐渐改变，模拟趴下
-    this.dogModel.rotation.x = lyingProgress * 0.3;
-    
-    // 尝试让骨骼弯曲
-    for (const [boneName, bone] of Object.entries(this.bones)) {
-      if (boneName.includes('spine') || boneName.includes('chest')) {
-        bone.rotation.x = lyingProgress * 0.5;
-      } else if (boneName.includes('leg') || boneName.includes('hind')) {
-        bone.rotation.x = lyingProgress * 0.8;
-      }
-    }
-    
-    // 趴下完成后进入睡眠状态
-    if (lyingProgress >= 1) {
-      this.dogState = 'sleeping';
-    }
-  }
-
-  updateSleepingAnimation(elapsed) {
-    // 睡眠状态：温和的呼吸+轻微身体摆动
-    const breathe = Math.sin(elapsed * CONFIG.DOG_BREATHE_SPEED * 0.5) * 0.01;
-    this.dogModel.position.z = breathe;
-    
-    // 保持趴下姿态
-    this.dogModel.rotation.x = 0.3;
-  }
-
 
   onResize() {
-    const w = window.innerWidth, h = window.innerHeight;
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(w, h);
+    // 视频 canvas 尺寸固定，不需要响应缩放
   }
 }

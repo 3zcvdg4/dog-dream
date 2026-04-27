@@ -21,10 +21,19 @@
   <div id="home-screen">
     <img id="bg-image" src="./assets/底层-背景.jpg" alt="background" />
     <img id="cushion" src="./assets/坐垫.png" alt="cushion" />
+    <!-- 视频元素：隐藏播放，由 canvas 做色度抠图显示 -->
+    <video id="dog-video" autoplay muted playsinline preload="auto" src="./assets/4.25.mp4"></video>
     <canvas id="dog-canvas"></canvas>
     <img id="dream-bubble" class="breathing" src="./assets/梦泡.png" alt="dream bubble" />
     <img id="text-image" src="./assets/文字.png" alt="text" />
     <div id="loading-hint">loading dream...</div>
+  </div>
+
+  <div id="dream-screen" class="hidden">
+    <div id="dream-content">
+      <h2>Dream Realm</h2>
+      <p>Click "Wake Up" to return to reality...</p>
+    </div>
   </div>
 
   <div id="bubble-shards"></div>
@@ -35,6 +44,13 @@
 
   <button id="wake-btn">· wake up ·</button>
   <button id="sleep-btn">· sleep ·</button>
+
+  <!-- 行为按钮 -->
+  <div id="behavior-buttons" class="hidden">
+    <button id="sit-btn">Sit</button>
+    <button id="play-btn">Play</button>
+    <button id="eat-btn">Eat</button>
+  </div>
 
   <!-- 画框简介面板 -->
   <div id="info-panel">

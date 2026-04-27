@@ -17,12 +17,8 @@ export const CONFIG = {
   FRAME_BASE_H: 1.1,
   FRAME_BASE_D: 0.04,
 
-  // 狗狗
-  DOG_SCALE_FACTOR: 1.37,
-  DOG_POSITION_Y_OFFSET: -1.28,
-  DOG_ROTATION_Y: -1.38,
-  DOG_ROTATION_Z: 0.2,
-  DOG_BREATHE_AMPLITUDE: 0.003,
+  // 狗狗（视频模式）
+  DOG_BREATHE_AMPLITUDE: 4,
   DOG_BREATHE_SPEED: 0.785,
 
   // 梦泡
@@ -38,7 +34,7 @@ export const CONFIG = {
   FLOAT_SPEED: 0.6,
   FLOAT_PHASE_OFFSET: 1.5,
 
-  // 相机
+  // 相机（保留用于画廊）
   CAMERA_FOV: 45,
   CAMERA_NEAR: 0.1,
   CAMERA_FAR: 100,
@@ -73,4 +69,28 @@ export const CONFIG = {
   FRAME_COLOR: 0xffffff,
   FRAME_ROUGHNESS: 0.1,
   FRAME_EMISSIVE_INTENSITY: 0.15,
+
+  // 视频资源
+  VIDEO_INITIAL_SRC: './assets/4.25.mp4',  // 初始走路→趴下视频
+  VIDEO_WAKEUP_SRC: './assets/4.25.mp4',   // 醒来动画（暂用同一视频占位）
+  VIDEO_SLEEP_SRC: './assets/4.25.mp4',    // 睡觉动画（暂用同一视频占位）
+  VIDEO_BEHAVIOR_SRCS: [                   // 行为动画片段数组（暂用占位）
+    './assets/4.25.mp4',
+    './assets/4.25.mp4',
+    './assets/4.25.mp4'
+  ],
+
+  // 色度抠图配置
+  CHROMA_KEY_TOLERANCE: 45,     // 颜色容差（从60降低到45，减少误抠）
+  CHROMA_KEY_SMOOTHNESS: 0.1,  // 边缘平滑度
+
+  // 色度抠图排除区域（不抠图的区域，保留原始像素）
+  // 格式：{ x, y, w, h } 相对于 canvas 坐标
+  // 狗狗眼睛区域（需要根据实际视频微调）
+  CHROMA_KEY_EXCLUDE_ZONES: [
+    { x: 170, y: 150, w: 80, h: 50 }  // 狗狗眼睛区域
+  ],
+
+  // 调试模式：用红色矩形标出排除区域（设为 true 可看到排除区域位置）
+  CHROMA_KEY_DEBUG: false,
 };

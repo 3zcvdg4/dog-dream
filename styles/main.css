@@ -45,14 +45,21 @@ body {
   z-index: 2;
 }
 
-/* 层3: Three.js 狗狗画布 */
+/* 层3: 狗狗视频 + 抠图画布 */
+#dog-video {
+  display: none; /* 隐藏原始视频元素，用 canvas 显示抠图结果 */
+}
+
 #dog-canvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  bottom: calc(10% + 20px + 40px + 50px + 16px);
+  left: 50%;
+  transform: translateX(-50%); /* 居中定位，与坐垫对齐 */
+  width: 420px;
+  height: 420px;
   z-index: 3;
   pointer-events: none;
+  background: transparent !important; /* 确保 canvas 背景透明 */
 }
 
 /* 层4a: 梦泡 */
@@ -157,8 +164,75 @@ body {
 #loading-hint.hidden { opacity: 0; }
 
 /* ════════════════════════════════
-   走廊
+   二级页面（梦境）
 ════════════════════════════════ */
+#dream-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;
+}
+
+#dream-screen.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#dream-content {
+  text-align: center;
+  color: white;
+  font-size: 24px;
+}
+
+#dream-content h2 {
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+#dream-content p {
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+/* 行为按钮 */
+#behavior-buttons {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  gap: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+#behavior-buttons.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#behavior-buttons button {
+  padding: 10px 20px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#behavior-buttons button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 #gallery-screen {
   position: fixed;
   inset: 0;
@@ -306,6 +380,13 @@ body {
     bottom: calc(10% + 20px + 40px);
   }
 
+  #dog-canvas {
+    width: 300px;
+    height: 300px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   #dream-bubble {
     width: clamp(150px, 40vw, 300px);
   }
@@ -356,6 +437,13 @@ body {
   #cushion {
     width: 250px;
     bottom: calc(10% + 20px + 20px);
+  }
+
+  #dog-canvas {
+    width: 250px;
+    height: 250px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   #dream-bubble {
