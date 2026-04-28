@@ -61,11 +61,15 @@ export class Interactions {
   }
 
   enterDream() {
+    console.log('🖱️ enterDream() called');
     this.state = 'dream-page';
     this.dreamBubble.classList.remove('visible');
-    // 显示二级页面（梦境页面）
-    this.dreamScreen.classList.add('visible');
-    this.wakeBtn.classList.add('visible');
+    // 直接操作样式显示二级页面
+    this.dreamScreen.style.opacity = '1';
+    this.dreamScreen.style.pointerEvents = 'all';
+    this.wakeBtn.style.opacity = '1';
+    this.wakeBtn.style.pointerEvents = 'all';
+    console.log('✅ dream-screen style set');
   }
 
   wakeUp() {
