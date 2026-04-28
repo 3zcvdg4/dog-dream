@@ -52,8 +52,8 @@ body {
 
 #dog-canvas {
   position: absolute;
-  bottom: calc(10% + 20px + 40px + 50px + 16px);
-  left: calc(50% + 30px); /* 居中后再往右挪30px */
+  bottom: calc(10% + 20px + 40px + 50px + 16px - 40px); /* 往下挪40px */
+  left: calc(50% + 60px); /* 再往右挪30px（之前已右移30px，总共60px） */
   transform: translateX(-50%);
   width: 840px;  /* 放大1倍 */
   height: 840px; /* 放大1倍 */

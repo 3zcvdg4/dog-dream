@@ -63,9 +63,25 @@ export class Interactions {
   enterDream() {
     this.state = 'dream-page';
     this.dreamBubble.classList.remove('visible');
-    // 进入二级页面：显示画廊
+
+    // 确保 galleryScene 已初始化
+    if (!this.galleryScene) {
+      // 动态导入并初始化 GalleryScene
+      import('./scene-gallery.js').then(({ GalleryScene }) => {
+        this.galleryScene = new GalleryScene();
+        this.showGallery();
+      });
+    } else {
+      this.showGallery();
+    }
+  }
+
+  showGallery() {
+    // 首页淡出并降低 z-index，让画廊显示在上面
     this.homeScreen.classList.add('fade-out');
+    this.homeScreen.style.zIndex = '4';
     this.galleryScreen.classList.add('visible');
+    this.galleryScreen.style.zIndex = '10';
     this.wakeBtn.classList.add('visible');
   }
 
