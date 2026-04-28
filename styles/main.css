@@ -53,10 +53,10 @@ body {
 #dog-canvas {
   position: absolute;
   bottom: calc(10% + 20px + 40px + 50px + 16px);
-  left: 50%;
-  transform: translateX(-50%); /* 居中定位，与坐垫对齐 */
-  width: 420px;
-  height: 420px;
+  left: calc(50% + 30px); /* 居中后再往右挪30px */
+  transform: translateX(-50%);
+  width: 840px;  /* 放大1倍 */
+  height: 840px; /* 放大1倍 */
   z-index: 3;
   pointer-events: none;
   background: transparent !important; /* 确保 canvas 背景透明 */

@@ -81,16 +81,12 @@ export const CONFIG = {
   ],
 
   // 色度抠图配置
-  CHROMA_KEY_TOLERANCE: 45,     // 颜色容差（从60降低到45，减少误抠）
+  CHROMA_KEY_TOLERANCE: 45,     // 颜色容差
   CHROMA_KEY_SMOOTHNESS: 0.1,  // 边缘平滑度
 
-  // 色度抠图排除区域（不抠图的区域，保留原始像素）
-  // 格式：{ x, y, w, h } 相对于 canvas 坐标
-  // 狗狗眼睛区域（需要根据实际视频微调）
-  CHROMA_KEY_EXCLUDE_ZONES: [
-    { x: 170, y: 150, w: 80, h: 50 }  // 狗狗眼睛区域
-  ],
+  // 色度抠图排除区域（已移除，不再保护狗狗眼睛）
+  CHROMA_KEY_EXCLUDE_ZONES: [],
 
-  // 调试模式：用红色矩形标出排除区域（设为 true 可看到排除区域位置）
+  // 调试模式
   CHROMA_KEY_DEBUG: false,
 };

@@ -63,7 +63,9 @@ export class Interactions {
   enterDream() {
     this.state = 'dream-page';
     this.dreamBubble.classList.remove('visible');
-    this.dreamScreen.classList.add('visible');
+    // 进入二级页面：显示画廊
+    this.homeScreen.classList.add('fade-out');
+    this.galleryScreen.classList.add('visible');
     this.wakeBtn.classList.add('visible');
   }
 

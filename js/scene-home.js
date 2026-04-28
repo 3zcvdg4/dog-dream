@@ -31,9 +31,9 @@ export class HomeScene {
   }
 
   setupCanvas() {
-    // 设置 canvas 尺寸与视频区域匹配
-    this.dogCanvas.width = 420;
-    this.dogCanvas.height = 420;
+    // 视频放大1倍：canvas 尺寸从 420 改为 840
+    this.dogCanvas.width = 840;
+    this.dogCanvas.height = 840;
     this.ctx = this.dogCanvas.getContext('2d', { willReadFrequently: true });
   }
 
@@ -89,20 +89,6 @@ export class HomeScene {
     tryDetect();
   }
 
-  /**
-   * 判断像素是否在排除区域内
-   */
-  isInExcludeZone(x, y) {
-    const zones = CONFIG.CHROMA_KEY_EXCLUDE_ZONES || [];
-    for (const zone of zones) {
-      if (x >= zone.x && x < zone.x + zone.w &&
-          y >= zone.y && y < zone.y + zone.h) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   chromaKeyFrame() {
     if (!this.ctx || !this.videoReady || !this.video.videoWidth) return;
 
@@ -143,14 +129,6 @@ export class HomeScene {
 
     // 创建一个 alpha 蒙版：背景像素设为透明，非背景像素保持不透明
     for (let i = 0; i < data.length; i += 4) {
-      const px = (i / 4) % cw;
-      const py = Math.floor(i / 4 / cw);
-
-      // 如果在排除区域内（如狗狗眼睛），跳过抠图
-      if (this.isInExcludeZone(px, py)) {
-        continue;
-      }
-
       const dr = data[i] - bg.r;
       const dg = data[i + 1] - bg.g;
       const db = data[i + 2] - bg.b;
@@ -169,16 +147,6 @@ export class HomeScene {
 
     // 步骤3: 将修改后的像素数据放回 canvas
     this.ctx.putImageData(imageData, 0, 0);
-
-    // 调试模式：绘制排除区域边界
-    if (CONFIG.CHROMA_KEY_DEBUG) {
-      const zones = CONFIG.CHROMA_KEY_EXCLUDE_ZONES || [];
-      this.ctx.strokeStyle = 'red';
-      this.ctx.lineWidth = 2;
-      zones.forEach(zone => {
-        this.ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
-      });
-    }
   }
 
   animate() {
