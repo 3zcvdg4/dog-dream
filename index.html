@@ -1,76 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>A Dog's Dream - 个人作品集</title>
-  <meta name="description" content="一个创新的3D交互式个人作品集网站，通过梦境隐喻展示创意项目。">
-  <meta name="keywords" content="作品集,3D,交互设计,WebGL,Three.js">
-  <meta name="author" content="Your Name">
-  <meta property="og:title" content="A Dog's Dream - 个人作品集">
-  <meta property="og:description" content="一个创新的3D交互式个人作品集网站，通过梦境隐喻展示创意项目。">
-  <meta property="og:image" content="./assets/底层-背景.jpg">
-  <meta property="og:url" content="https://ornate-unicorn-863c99.netlify.app/">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="./assets/puppy.glb" type="model/gltf-binary">
-  <link rel="stylesheet" href="./styles/main.css">
-</head>
-<body>
-
-  <div id="home-screen">
-    <img id="bg-image" src="./assets/底层-背景.jpg" alt="background" />
-    <img id="cushion" src="./assets/坐垫.png" alt="cushion" />
-    <!-- 视频元素：隐藏播放，由 canvas 做色度抠图显示 -->
-    <video id="dog-video" autoplay muted playsinline preload="auto" src="./assets/4.25.mp4"></video>
-    <canvas id="dog-canvas"></canvas>
-    <img id="dream-bubble" class="breathing" src="./assets/梦泡.png" alt="dream bubble" />
-    <img id="text-image" src="./assets/文字.png" alt="text" />
-    <div id="loading-hint">loading dream...</div>
-  </div>
-
-  <div id="dream-screen" class="hidden">
-    <div id="dream-content">
-      <h2>Dream Realm</h2>
-      <p>Click "Wake Up" to return to reality...</p>
-    </div>
-  </div>
-
-  <div id="bubble-shards"></div>
-
-  <div id="gallery-screen">
-    <canvas id="gallery-canvas"></canvas>
-  </div>
-
-  <button id="wake-btn">· wake up ·</button>
-  <button id="sleep-btn">· sleep ·</button>
-
-  <!-- 行为按钮 -->
-  <div id="behavior-buttons" class="hidden">
-    <button id="sit-btn">Sit</button>
-    <button id="play-btn">Play</button>
-    <button id="eat-btn">Eat</button>
-  </div>
-
-  <!-- 画框简介面板 -->
-  <div id="info-panel">
-    <div id="info-title">Work 01</div>
-    <div id="info-desc">简介内容待填写...</div>
-    <div id="info-btn-group">
-      <button id="info-enter-btn">进入深梦</button>
-      <button id="info-back-btn">← 返回画廊</button>
-    </div>
-  </div>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
-    }
-  }
-  </script>
-
-  <script type="module" src="./js/main.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dog Dream Portfolio</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
