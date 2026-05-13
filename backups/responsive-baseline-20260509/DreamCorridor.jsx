@@ -10,9 +10,6 @@ const LOOP_LENGTH = 33;
 const GALLERY_MAX_Z = 0;
 const GALLERY_SCROLL_FACTOR = 0.012;
 const MAX_WHEEL_DELTA = 90;
-const MAX_TOUCH_DELTA = 96;
-const TOUCH_SCROLL_MULTIPLIER = 1.75;
-const TOUCH_AXIS_LOCK_THRESHOLD = 5;
 const CAMERA_SMOOTH_FACTOR = 0.06;
 const PAW_PHASE_PER_DELTA = 0.0042;
 const MAX_PAW_PHASE_INCREMENT = 0.4;
@@ -25,41 +22,10 @@ const LEFT_FRAME_Y = 1.76;
 const RIGHT_FRAME_Y = 1.9;
 const CAMERA_FOV = 50;
 function getFocusZOffsetMagnitude(viewportWidth) {
-  return 0;
-}
-
-function getFocusScreenShiftX(viewportWidth) {
-  if (viewportWidth <= 599) return 0.28;
-  if (viewportWidth <= 767) return 0.2;
-  if (viewportWidth <= 1023) return 0.08;
-  return 0;
-}
-
-function getFocusScreenShiftY(viewportWidth) {
-  if (viewportWidth <= 599) return -0.1;
-  if (viewportWidth <= 767) return -0.08;
-  return 0;
-}
-
-function getDesktopFocusViewOffsetX(viewportWidth) {
-  if (viewportWidth <= 1023) return 0;
-  if (viewportWidth <= 1439) return 170;
-  if (viewportWidth <= 1659) return 250;
-  return 300;
-}
-
-function getMobileFocusViewOffsetY(viewportWidth) {
-  if (viewportWidth <= 599) return 72;
-  if (viewportWidth <= 767) return 56;
-  if (viewportWidth <= 1023) return 42;
-  return 0;
-}
-
-function getFocusCameraFov(viewportWidth) {
-  if (viewportWidth <= 599) return 56;
-  if (viewportWidth <= 767) return 55;
-  if (viewportWidth <= 1023) return 53;
-  return CAMERA_FOV;
+  if (viewportWidth <= 760) return -0.12;
+  if (viewportWidth <= 1024) return -0.36;
+  if (viewportWidth <= 1280) return -0.58;
+  return -0.76;
 }
 
 const VISIBLE_FRAME_CYCLES = 2;
@@ -385,8 +351,6 @@ function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onF
   const cameraZRef = useRef(targetZ);
   const focusCameraVectorRef = useRef(new THREE.Vector3());
   const focusLookAtVectorRef = useRef(new THREE.Vector3());
-  const focusViewOffsetRef = useRef(null);
-  const focusFovRef = useRef(CAMERA_FOV);
   const frames = useMemo(
     () => createGalleryFrames(activeCycle, targetZ, loopProgress),
     [activeCycle, targetZ, loopProgress],
@@ -397,80 +361,21 @@ function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onF
     const camera = state.camera;
 
     if (focusedProject) {
-      const desktopFocusViewOffsetX = getDesktopFocusViewOffsetX(viewportWidth);
-      const mobileFocusViewOffsetY = getMobileFocusViewOffsetY(viewportWidth);
-      const focusViewOffsetX = viewportWidth > 1023 ? desktopFocusViewOffsetX : 0;
-      const focusViewOffsetY = viewportWidth <= 1023 ? mobileFocusViewOffsetY : 0;
-      const nextFocusViewOffset = (focusViewOffsetX !== 0 || focusViewOffsetY !== 0)
-        ? `${state.size.width}x${state.size.height}:${focusViewOffsetX}:${focusViewOffsetY}`
-        : 'none';
-      const nextFocusFov = getFocusCameraFov(viewportWidth);
-      let shouldUpdateProjectionMatrix = false;
-
-      if (focusViewOffsetRef.current !== nextFocusViewOffset) {
-        focusViewOffsetRef.current = nextFocusViewOffset;
-
-        if (focusViewOffsetX !== 0 || focusViewOffsetY !== 0) {
-          camera.setViewOffset(
-            state.size.width,
-            state.size.height,
-            focusViewOffsetX,
-            focusViewOffsetY,
-            state.size.width,
-            state.size.height,
-          );
-        } else {
-          camera.clearViewOffset();
-        }
-
-        shouldUpdateProjectionMatrix = true;
-      }
-
-      if (focusFovRef.current !== nextFocusFov) {
-        focusFovRef.current = nextFocusFov;
-        camera.fov = nextFocusFov;
-        shouldUpdateProjectionMatrix = true;
-      }
-
-      if (shouldUpdateProjectionMatrix) {
-        camera.updateProjectionMatrix();
-      }
-
       const focusZOffsetMagnitude = getFocusZOffsetMagnitude(viewportWidth);
       const focusZOffset = focusedProject.side < 0 ? focusZOffsetMagnitude : -focusZOffsetMagnitude;
-      const focusScreenShiftX = getFocusScreenShiftX(viewportWidth);
-      const focusScreenShiftY = getFocusScreenShiftY(viewportWidth);
       focusCameraVectorRef.current.set(
         focusedProject.cameraX,
-        focusedProject.cameraY + focusScreenShiftY,
+        focusedProject.cameraY,
         focusedProject.cameraZ + focusZOffset,
       );
       focusLookAtVectorRef.current.set(
-        focusedProject.lookAtX + focusedProject.side * focusScreenShiftX,
-        focusedProject.lookAtY + focusScreenShiftY,
-        focusedProject.lookAtZ,
+        focusedProject.lookAtX,
+        focusedProject.lookAtY,
+        focusedProject.lookAtZ + focusZOffset,
       );
       camera.position.lerp(focusCameraVectorRef.current, 0.12);
       camera.lookAt(focusLookAtVectorRef.current);
       return;
-    }
-
-    let shouldResetProjectionMatrix = false;
-
-    if (focusViewOffsetRef.current !== null) {
-      focusViewOffsetRef.current = null;
-      camera.clearViewOffset();
-      shouldResetProjectionMatrix = true;
-    }
-
-    if (focusFovRef.current !== CAMERA_FOV) {
-      focusFovRef.current = CAMERA_FOV;
-      camera.fov = CAMERA_FOV;
-      shouldResetProjectionMatrix = true;
-    }
-
-    if (shouldResetProjectionMatrix) {
-      camera.updateProjectionMatrix();
     }
 
     cameraZRef.current += (targetZ - cameraZRef.current) * CAMERA_SMOOTH_FACTOR;
@@ -508,12 +413,6 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const pawTimerRef = useRef(null);
   const wheelFrameRef = useRef(0);
-  const touchStateRef = useRef({
-    active: false,
-    axis: null,
-    lastX: 0,
-    lastY: 0,
-  });
   const targetZRef = useRef(0);
   const pawPhaseRef = useRef(0);
   const motionQueueRef = useRef({
@@ -566,12 +465,10 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
     pawTimerRef.current = window.setTimeout(() => setPawActive(false), PAW_HOLD_MS);
   }, []);
 
-  const applyScrollDelta = useCallback((rawDelta) => {
+  function handleWheel(event) {
     if (focusedProject) return;
-
-    const delta = Math.max(-MAX_WHEEL_DELTA, Math.min(MAX_WHEEL_DELTA, rawDelta));
+    const delta = Math.max(-MAX_WHEEL_DELTA, Math.min(MAX_WHEEL_DELTA, event.deltaY));
     if (delta === 0) return;
-
     const nextTargetZ = Math.min(targetZRef.current - delta * GALLERY_SCROLL_FACTOR, GALLERY_MAX_Z);
     targetZRef.current = nextTargetZ;
     motionQueueRef.current.nextTargetZ = nextTargetZ;
@@ -590,58 +487,6 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
 
     scheduleMotionFlush();
     extendPawVisibility();
-  }, [extendPawVisibility, focusedProject, scheduleMotionFlush]);
-
-  function handleWheel(event) {
-    applyScrollDelta(event.deltaY);
-  }
-
-  function handleTouchStart(event) {
-    if (focusedProject || event.touches.length !== 1) return;
-    if (event.target instanceof Element && event.target.closest('button')) return;
-
-    const touch = event.touches[0];
-    touchStateRef.current = {
-      active: true,
-      axis: null,
-      lastX: touch.clientX,
-      lastY: touch.clientY,
-    };
-  }
-
-  function handleTouchMove(event) {
-    const touchState = touchStateRef.current;
-    if (!touchState.active || focusedProject || event.touches.length !== 1) return;
-
-    const touch = event.touches[0];
-    const deltaX = touchState.lastX - touch.clientX;
-    const deltaY = touchState.lastY - touch.clientY;
-
-    if (!touchState.axis) {
-      if (Math.abs(deltaX) < TOUCH_AXIS_LOCK_THRESHOLD && Math.abs(deltaY) < TOUCH_AXIS_LOCK_THRESHOLD) {
-        return;
-      }
-
-      touchState.axis = Math.abs(deltaY) >= Math.abs(deltaX) ? 'vertical' : 'horizontal';
-    }
-
-    touchState.lastX = touch.clientX;
-    touchState.lastY = touch.clientY;
-
-    if (touchState.axis !== 'vertical') return;
-
-    event.preventDefault();
-    const scaledDelta = Math.max(-MAX_TOUCH_DELTA, Math.min(MAX_TOUCH_DELTA, deltaY * TOUCH_SCROLL_MULTIPLIER));
-    applyScrollDelta(scaledDelta);
-  }
-
-  function handleTouchEnd() {
-    touchStateRef.current = {
-      active: false,
-      axis: null,
-      lastX: 0,
-      lastY: 0,
-    };
   }
 
   function handleFocusProject(project) {
@@ -666,10 +511,6 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
         WALL_ALIGNMENT_DEBUG.enabled && WALL_ALIGNMENT_DEBUG.disableScreenOverlay ? 'corridor--debug-overlay-off' : '',
       ].filter(Boolean).join(' ')}
       onWheel={handleWheel}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
     >
       <Canvas
         camera={{ position: [0, 1.5, 0], fov: CAMERA_FOV, near: 0.1, far: 120 }}

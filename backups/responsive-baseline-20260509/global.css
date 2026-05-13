@@ -69,23 +69,8 @@ button {
   height: 100vh;
   aspect-ratio: auto;
   overflow: hidden;
-  --home-display-font: 'Cormorant', 'Times New Roman', Georgia, 'Noto Serif SC', serif;
-  --home-word-top: calc(11.8% + 149px);
-  --home-word-max-width: 1980px;
-  --home-word-font-size: 61px;
-  --home-word-letter-spacing: 0.002em;
-  --home-line-top: calc(64% - 50px);
-  --bubble-top: calc(44% + 130px);
-  --bubble-left: 39%;
-  --bubble-width: min(30.1%, 350px);
-  --dog-scene-top: 64.5%;
-  --dog-scene-width: min(37.2%, 420px);
-  --dog-canvas-width: 185%;
-  --dog-canvas-height: 158%;
-  --dog-video-scale: 2.16;
-  --dog-video-filter: brightness(1.01) saturate(0.96) sepia(0.14) hue-rotate(-8deg);
-  --dog-offset-x: clamp(220px, 19vw, 320px);
-  --dog-lift: clamp(-14px, -0.18vw, 2px);
+  --dog-offset-x: clamp(160px, 15.625vw, 240px);
+  --dog-lift: clamp(24px, 2.6vw, 40px);
   --cushion-lift: clamp(42px, 3.9vw, 60px);
   background: #fffefc;
   box-shadow: none;
@@ -93,28 +78,18 @@ button {
 
 .home-word {
   position: absolute;
-  top: calc(var(--home-word-top) - 50px);
+  top: calc(11.8% + 80px);
   left: 50%;
   z-index: 3;
-  width: min(92vw, var(--home-word-max-width));
-  margin: 0;
-  color: #191917;
-  font-family: var(--home-display-font);
-  font-size: clamp(18px, 2.8vw, var(--home-word-font-size));
-  font-style: normal;
-  font-weight: 400;
-  letter-spacing: var(--home-word-letter-spacing);
-  line-height: 0.92;
-  text-align: center;
-  text-transform: uppercase;
-  white-space: nowrap;
-  pointer-events: none;
+  width: min(90%, 990px);
+  max-height: 19.5%;
+  object-fit: contain;
   transform: translateX(-50%);
 }
 
 .home-line {
   position: absolute;
-  top: var(--home-line-top);
+  top: calc(64% - 50px);
   left: 0;
   z-index: 1;
   width: 100%;
@@ -124,10 +99,10 @@ button {
 
 .dream-bubble {
   position: absolute;
-  top: var(--bubble-top);
-  left: var(--bubble-left);
+  top: calc(44% + 130px);
+  left: 39%;
   z-index: 5;
-  width: var(--bubble-width);
+  width: min(30.1%, 350px);
   padding: 0;
   border: 0;
   background: transparent;
@@ -164,9 +139,9 @@ button {
 .dog-scene {
   position: absolute;
   left: 50%;
-  top: var(--dog-scene-top);
+  top: 64.5%;
   z-index: 4;
-  width: var(--dog-scene-width);
+  width: min(37.2%, 420px);
   aspect-ratio: 1.3 / 1;
   transform: translate(-50%, -5%);
 }
@@ -193,29 +168,57 @@ button {
   left: calc(50% + var(--dog-offset-x));
   bottom: calc(2% + var(--dog-lift));
   z-index: 2;
-  width: var(--dog-canvas-width);
-  height: var(--dog-canvas-height);
+  width: 185%;
+  height: 158%;
   object-fit: contain;
   transform: translateX(-50%);
 }
 
-.dog-video-display {
-  transform: translateX(-50%) scale(var(--dog-video-scale));
-  transform-origin: center bottom;
-  filter: var(--dog-video-filter);
-  will-change: transform;
+.dog-scene--waking {
+  animation: wakeShake 520ms ease-in-out infinite;
+}
+
+.dog-scene--sleepingAgain {
+  animation: settleSleep 1.3s ease both;
+}
+
+.wake-lines {
+  position: absolute;
+  left: 50%;
+  top: 59%;
+  z-index: 8;
+  width: 120px;
+  height: 60px;
+  transform: translateX(-50%);
+}
+
+.wake-lines span {
+  position: absolute;
+  top: 22px;
+  width: 22px;
+  height: 9px;
+  border-top: 2px solid #151513;
+  border-radius: 999px;
+  animation: lookAround 760ms ease-in-out infinite alternate;
+}
+
+.wake-lines span:first-child {
+  left: 22px;
+}
+
+.wake-lines span:last-child {
+  right: 22px;
+  animation-delay: 120ms;
 }
 
 .sleep-button {
   position: absolute;
   left: 50%;
-  top: 86%;
+  top: 84%;
   z-index: 8;
-  min-width: 110px;
-  min-height: 44px;
-  padding: 10px 21px;
-  font-size: 15px;
+  min-width: 96px;
   transform: translateX(-50%);
+  text-transform: lowercase;
 }
 
 .sleep-button:hover {
@@ -400,6 +403,7 @@ button {
   right: clamp(18px, 3vw, 42px);
   bottom: clamp(18px, 3vw, 38px);
   z-index: 6;
+  text-transform: lowercase;
 }
 
 .focus-copy {
@@ -407,15 +411,11 @@ button {
   top: 50%;
   right: clamp(92px, 14vw, 180px);
   z-index: 5;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: clamp(320px, 17.3828vw, 445px);
+  width: min(32vw, 400px);
   min-width: 300px;
-  min-height: clamp(192px, 10.1563vw, 260px);
-  padding: clamp(20px, 0.9375vw, 24px);
+  padding: 28px 28px 26px;
   border: 1px solid rgb(255 255 255 / 62%);
-  border-radius: clamp(14px, 0.7031vw, 18px);
+  border-radius: 30px;
   background: linear-gradient(180deg, rgb(255 255 255 / 78%), rgb(248 248 245 / 58%));
   box-shadow: 0 18px 48px rgb(15 23 42 / 10%), inset 0 1px 0 rgb(255 255 255 / 72%);
   backdrop-filter: blur(28px) saturate(150%);
@@ -443,7 +443,6 @@ button {
 .focus-copy h2 {
   font-size: 30px;
   letter-spacing: -0.03em;
-  line-height: 1.04;
 }
 
 .focus-copy p:not(.eyebrow),
@@ -455,7 +454,7 @@ button {
 }
 
 .focus-copy p:not(.eyebrow) {
-  margin: 10px 0 0;
+  margin-top: 12px;
   font-size: 14px;
 }
 
@@ -464,15 +463,12 @@ button {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 18px;
+  margin-top: 24px;
 }
 
-.focus-actions .site-button,
-.project-actions .site-button,
-.sleep-button,
-.wake-button {
-  min-height: 26px;
-  padding: 0 25px;
+.focus-actions .site-button {
+  min-height: 42px;
+  padding: 0 18px;
   border: 1px solid rgb(255 255 255 / 70%);
   border-radius: 999px;
   background: linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(242 242 240 / 72%));
@@ -485,74 +481,13 @@ button {
   -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
-
-@media (max-width: 1024px) {
-  .home-card {
-    --home-word-top: calc(11.9% + 62px);
-    --home-word-max-width: 820px;
-    --home-word-font-size: 32px;
-    --bubble-top: calc(44% + 118px);
-    --bubble-left: 38.8%;
-    --bubble-width: min(31vw, 300px);
-    --dog-scene-top: 64.8%;
-    --dog-scene-width: min(39vw, 380px);
-    --dog-canvas-width: 172%;
-    --dog-canvas-height: 150%;
-    --dog-video-scale: 2.16;
-    --dog-offset-x: clamp(96px, 11vw, 150px);
-    --dog-lift: clamp(18px, 2.3vw, 28px);
-    --cushion-lift: clamp(36px, 4vw, 50px);
-  }
-
-  .focus-copy {
-    right: clamp(38px, 5vw, 78px);
-    width: min(35vw, 336px);
-    min-width: 240px;
-    padding: 24px 22px 22px;
-    transform: translate(calc(-1 * clamp(148px, 15vw, 220px)), -50%);
-  }
-
-  .focus-copy h2 {
-    font-size: 26px;
-  }
-}
-
-@media (max-width: 900px) {
-  .home-card {
-    --home-word-top: calc(12.2% + 40px);
-    --home-word-max-width: 680px;
-    --home-word-font-size: 27px;
-    --bubble-top: calc(44.5% + 92px);
-    --bubble-left: 38%;
-    --bubble-width: min(34vw, 252px);
-    --dog-scene-top: 65.5%;
-    --dog-scene-width: min(45vw, 336px);
-    --dog-canvas-width: 160%;
-    --dog-canvas-height: 140%;
-    --dog-offset-x: clamp(60px, 8.5vw, 100px);
-    --dog-lift: clamp(14px, 2.2vw, 24px);
-  }
-
-  .focus-copy {
-    left: 50%;
-    right: auto;
-    top: auto;
-    bottom: 74px;
-    width: min(78vw, 430px);
-    min-width: 0;
-    transform: translateX(-50%);
-  }
-}
-.focus-actions .site-button:hover,
-.sleep-button:hover,
-.wake-button:hover {
+.focus-actions .site-button:hover {
   border-color: rgb(255 255 255 / 78%);
   background: linear-gradient(180deg, rgb(255 255 255 / 98%), rgb(246 246 244 / 82%));
   box-shadow: 0 14px 30px rgb(15 23 42 / 14%), inset 0 1px 0 rgb(255 255 255 / 92%);
 }
 
-.focus-actions .site-button--ghost,
-.wake-button {
+.focus-actions .site-button--ghost {
   border-color: rgb(255 255 255 / 54%);
   background: linear-gradient(180deg, rgb(255 255 255 / 54%), rgb(244 244 241 / 34%));
   color: rgb(24 24 22 / 72%);
@@ -655,6 +590,22 @@ button {
   50% { transform: translateY(-5%) scale(1.015); }
 }
 
+@keyframes wakeShake {
+  0%, 100% { transform: translate(-50%, -5%) rotate(0deg); }
+  35% { transform: translate(-52%, -7%) rotate(-2deg); }
+  65% { transform: translate(-48%, -5%) rotate(2deg); }
+}
+
+@keyframes settleSleep {
+  from { opacity: 0.6; transform: translate(-50%, -5%) scale(1.03); }
+  to { opacity: 1; transform: translate(-50%, -5%) scale(1); }
+}
+
+@keyframes lookAround {
+  from { transform: translateX(-5px) rotate(-8deg); }
+  to { transform: translateX(5px) rotate(8deg); }
+}
+
 @keyframes pawStepAppear {
   0% {
     opacity: 0;
@@ -673,61 +624,39 @@ button {
   .home-card {
     width: 100vw;
     max-width: none;
-    --home-word-top: calc(11.2% + 24px);
-    --home-word-max-width: 92vw;
-    --home-word-font-size: 21px;
-    --home-word-letter-spacing: 0.01em;
-    --bubble-top: calc(42.8% + 96px);
-    --bubble-left: 37.5%;
-    --bubble-width: min(45vw, 300px);
-    --dog-scene-top: 64.2%;
-    --dog-scene-width: min(56vw, 340px);
-    --dog-canvas-width: 144%;
-    --dog-canvas-height: 124%;
     --dog-offset-x: clamp(34px, 10vw, 56px);
     --dog-lift: clamp(16px, 4vw, 24px);
     --cushion-lift: clamp(36px, 9.5vw, 54px);
   }
 
   .home-word {
-    white-space: normal;
-    line-height: 1.04;
+    width: 92%;
+    max-height: 19.5%;
+  }
+
+  .dog-scene {
+    top: 64.5%;
+    width: 58%;
+  }
+
+  .dog-canvas {
+    width: 140%;
+    height: 120%;
+  }
+
+  .dream-bubble {
+    top: calc(43% + 102px);
+    left: 37%;
+    width: 47.6%;
   }
 
   .focus-copy {
-    left: 50%;
-    right: auto;
+    right: 50%;
     top: auto;
-    bottom: 68px;
+    bottom: 72px;
     width: min(86vw, 360px);
     min-width: 0;
-    transform: translateX(-50%);
-  }
-
-  .focus-copy h2 {
-    font-size: 24px;
-  }
-}
-
-@media (max-width: 560px) {
-  .home-card {
-    --home-word-top: calc(10.5% + 18px);
-    --home-word-font-size: 18px;
-    --bubble-top: calc(42% + 80px);
-    --bubble-left: 38%;
-    --bubble-width: min(50vw, 216px);
-    --dog-scene-top: 63.5%;
-    --dog-scene-width: min(60vw, 286px);
-    --dog-offset-x: clamp(26px, 8vw, 44px);
-    --dog-lift: clamp(12px, 3.4vw, 20px);
-    --cushion-lift: clamp(28px, 7vw, 42px);
-  }
-
-  .focus-copy {
-    bottom: 58px;
-    width: min(90vw, 330px);
-    padding: 22px 18px 20px;
-    border-radius: 24px;
+    transform: translateX(50%);
   }
 
   .project-hero {
@@ -741,178 +670,5 @@ button {
 
   .project-placeholders {
     grid-template-columns: 1fr;
-  }
-}
-
-.corridor {
-  --focus-copy-top: 50%;
-  --focus-copy-right: clamp(68px, 7.45vw, 112px);
-  --focus-copy-left: auto;
-  --focus-copy-bottom: auto;
-  --focus-copy-width: clamp(288px, 15.6445vw, 400.5px);
-  --focus-copy-min-height: clamp(172.8px, 18.2955vh, 234px);
-  --focus-copy-padding: clamp(18px, 0.8594vw, 21.6px);
-  --focus-copy-radius: clamp(12.6px, 0.6328vw, 16.2px);
-  --focus-copy-translate-x: calc(-1 * clamp(190px, 14.75vw, 256px));
-  --focus-copy-translate-y: -50%;
-  --focus-copy-title-size: 24px;
-  --focus-copy-summary-size: 13px;
-}
-
-.focus-copy {
-  top: var(--focus-copy-top);
-  right: var(--focus-copy-right);
-  bottom: var(--focus-copy-bottom);
-  left: var(--focus-copy-left);
-  width: min(var(--focus-copy-width), calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  min-height: var(--focus-copy-min-height, auto);
-  min-width: 0;
-  padding: var(--focus-copy-padding);
-  border-radius: var(--focus-copy-radius);
-  transform: translate(var(--focus-copy-translate-x), var(--focus-copy-translate-y));
-}
-
-.focus-copy h2 {
-  font-size: var(--focus-copy-title-size);
-  line-height: 1.02;
-}
-
-.focus-copy p:not(.eyebrow) {
-  font-size: var(--focus-copy-summary-size);
-  line-height: 1.62;
-}
-
-.focus-actions .site-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@media (min-width: 1440px) {
-  .corridor {
-    --focus-copy-right: clamp(134px, 10vw, 214px);
-    --focus-copy-width: clamp(324px, 15.6445vw, 400.5px);
-    --focus-copy-min-height: clamp(194px, 18.2955vh, 234px);
-    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
-    --focus-copy-translate-x: calc(-1 * clamp(336px, 19.1vw, 438px));
-    --focus-copy-title-size: 27px;
-  }
-}
-
-@media (min-width: 1660px) {
-  .home-card {
-    --dog-video-scale: 2.16;
-    --dog-offset-x: clamp(348px, 18.4vw, 488px);
-    --dog-lift: clamp(-58px, -2.6vw, -32px);
-  }
-
-  .corridor {
-    --focus-copy-right: clamp(156px, 9.2vw, 236px);
-    --focus-copy-width: clamp(351px, 15.6445vw, 400.5px);
-    --focus-copy-min-height: clamp(205px, 18.2955vh, 234px);
-    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
-    --focus-copy-translate-x: calc(-1 * clamp(398px, 20.4vw, 526px));
-    --focus-copy-title-size: 28px;
-  }
-}
-
-@media (max-width: 1023px) and (min-width: 768px) {
-  .corridor {
-    --focus-copy-top: auto;
-    --focus-copy-right: auto;
-    --focus-copy-left: 50%;
-    --focus-copy-bottom: 132px;
-    --focus-copy-width: clamp(356px, 64vw, 468px);
-    --focus-copy-padding: 18px 20px 16px;
-    --focus-copy-radius: 28px;
-    --focus-copy-translate-x: -50%;
-    --focus-copy-translate-y: 0%;
-    --focus-copy-title-size: 24px;
-  }
-
-  .corridor.is-focused .wake-button {
-    top: 18px;
-    right: 20px;
-    bottom: auto;
-  }
-}
-
-@media (max-width: 767px) and (min-width: 600px) {
-  .corridor {
-    --focus-copy-top: auto;
-    --focus-copy-right: auto;
-    --focus-copy-left: 50%;
-    --focus-copy-bottom: 112px;
-    --focus-copy-width: clamp(320px, 84vw, 382px);
-    --focus-copy-padding: 16px 18px 14px;
-    --focus-copy-radius: 26px;
-    --focus-copy-translate-x: -50%;
-    --focus-copy-translate-y: 0%;
-    --focus-copy-title-size: 22px;
-    --focus-copy-summary-size: 13px;
-  }
-
-  .focus-actions {
-    gap: 8px;
-    flex-wrap: nowrap;
-    justify-content: center;
-  }
-
-  .focus-actions .site-button,
-  .project-actions .site-button {
-    min-height: 26px;
-    padding: 0 22px;
-    white-space: nowrap;
-  }
-
-  .corridor.is-focused .wake-button {
-    top: 16px;
-    right: 18px;
-    bottom: auto;
-  }
-}
-
-@media (max-width: 599px) {
-  .corridor {
-    --focus-copy-top: auto;
-    --focus-copy-right: auto;
-    --focus-copy-left: 50%;
-    --focus-copy-bottom: 102px;
-    --focus-copy-width: clamp(292px, 88vw, 340px);
-    --focus-copy-padding: 14px 16px 12px;
-    --focus-copy-radius: 22px;
-    --focus-copy-translate-x: -50%;
-    --focus-copy-translate-y: 0%;
-    --focus-copy-title-size: 20px;
-    --focus-copy-summary-size: 12px;
-  }
-
-  .focus-actions {
-    gap: 8px;
-    flex-wrap: nowrap;
-    justify-content: center;
-    margin-top: 18px;
-  }
-
-  .focus-actions .site-button,
-  .project-actions .site-button {
-    min-height: 24px;
-    padding: 0 20px;
-    white-space: nowrap;
-  }
-
-  .corridor-status {
-    gap: 10px;
-    font-size: 10px;
-  }
-
-  .corridor.is-focused .wake-button {
-    top: 14px;
-    right: 14px;
-    bottom: auto;
-    min-height: 24px;
-    padding: 6px 20px;
-    font-size: 12px;
   }
 }

@@ -1,0 +1,9 @@
+Restore trigger: 回到 5月9日响应式基线版
+
+Backup scope:
+- src/pages/Home.jsx
+- src/pages/DreamCorridor.jsx
+- src/styles/global.css
+
+Intent:
+- Save the pre-responsive-refactor state confirmed by the user before home-title/text and focused-layout responsive changes.
