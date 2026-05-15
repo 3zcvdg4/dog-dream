@@ -49,6 +49,7 @@
 - 已校准首页首屏构图：标题已改为衬线大写样式，优先使用 `Source Serif Variable` / `Source Serif 4` 回退到系统 serif；在上一轮基础上又上移约 20px、缩小约 15%、减轻字重并收紧字距，使排版更细、更接近杂志感；随后又继续上移 6px，并把字距再收紧一点；最新一轮继续进一步压缩字距。水平线保持位置，梦泡放大 40% 并继续下移 30px，坐垫缩小 10% 后继续上移到响应式 42px 到 60px；当前狗狗画面已继续改为向右、向下微调，桌面端和 1660+ 宽屏断点都同步增加右移并降低落点，最近两轮继续做了小幅下压，其中最新一轮只再额外下移一点点。
 - 已补充首页移动端/电脑端自适应：狗狗右移、狗狗上移和坐垫上移改为 CSS 响应式变量；窄屏下会降低狗狗偏移量，并单独缩小狗狗 canvas，避免主要元素明显溢出画面。
 - 已按旧版 `GalleryScene` 的核心效果重做二级梦境走廊：封闭的窄白灰 3D 直走廊、真实相机沿 Z 轴滚轮前进、两侧贴墙式竖向画框/展板、3D 画框点击聚焦。
+- 已持续补充首页响应式定向规则：当前已对 `430×932`、`560×900`、`760×1000`、`900×1200`、`1024×1366`、`1280×800`、`1440×900`、`1660×1279`、`1834×1279`、`1920×1080` 建立单独断点，用于分别控制标题、梦泡、狗狗视频的大小与偏移。
 - 已实现狗脚印：当前为屏幕下方中间区域的 3 个近景脚印叠加层，慢速/快速滚轮都会触发；脚印更小，远处更深、近处更浅，停止滚动后渐隐。
 - 已将二级页画框改为四根独立 `boxGeometry` 组成的真实 3D 白色边框；无图项目不再渲染可见白色占位面，只保留边框和不可见点击面。
 - 已将画框漂浮幅度增强到 `FLOAT_AMPLITUDE = 0.14`，保留旧版节奏 `FLOAT_SPEED = 0.6` 和 `FLOAT_PHASE_OFFSET = 1.5`。
@@ -115,6 +116,64 @@
 - VS Code 内置浏览器当前共享视口约：`971 × 665`
 - 最近两次“向下/向右”之所以用户侧看起来无变化，是因为修改落在 `@media (max-width: 1024px)` 断点，只影响内置预览小视口，没有命中用户的 2560 宽桌面屏幕。
 - 后续首页视频位置与尺寸调整，默认优先修改桌面大屏断点；当前已将 `min-width: 1660px` 作为 2560 宽屏的主要调位基准。
+- 2026-05-14 新确认：`2560 × 1279` 仍是首页主基准，后续不得改动这组已对齐桌面默认值；其他尺寸只能向这组基准靠拢，不能反过来改基准。
+- 2026-05-14 当前首页已补充一套“相对元素尺寸”的调位变量，主要在 `src/styles/global.css` 中新增：`--dog-shift-x`、`--dog-drop-y`、`--bubble-shift-x`、`--bubble-shift-y`、`--bubble-scale`、`--home-word-shift-y`，以及辅助计算变量 `--bubble-half-width`、`--bubble-quarter-width`、`--cushion-third-height`、`--cushion-half-height`；后续可以继续用“半个梦泡”“半个坐垫”这类口径直接转成样式规则。
+- 2026-05-14 当前首页已按用户口头规则分档尝试：`430/560/760`、`900/1024`、`1280/1440`、`1660/1834`；其中 `1660 × 1279` 与 `1834 × 1279` 的梦泡方向已更正为 **向左 30px**，不是向右。
+- 2026-05-14 `430 × 932` 目前是重点微调档：本轮已确认“确实有改动，但还不够”；现状是 430 已单独加入标题、梦泡、狗视频规则，但视觉仍未定稿，下一轮需继续只盯 430 做小步微调，避免再次把狗位置改飞。
+- 2026-05-14 标题规则已开始从“跟随整体缩放”拆出独立控制：小屏下允许自动分行，目标最多 2 行；但 430 的标题大小/位置仍未最终确认，后续要继续单独调，不与狗和梦泡绑在同一轮联动里。
+- 2026-05-14 新增首页标题安全边界规则：设 `X = viewport width / 10`，标题左右安全边距不得小于 `1.5X`，最大可用宽度为 `7X`。在实现上已转成移动端 `--home-word-safe-width`，标题允许自动换行、`text-wrap: balance`，默认尽量保持字号，只有极小屏才通过 `clamp(...)` 缩小。
+- 2026-05-14 新确认：很多定向断点不是绝对定位，而是建立在所属区间基线上的“增量偏移”。例如 `1024 × 1366` 继承 `901–1024` 的 `--dog-shift-x: var(--bubble-half-width)` / `--dog-drop-y: var(--cushion-half-height)`；`1660 × 1279`、`1834 × 1279` 继承 `1660–1919` 的 `--bubble-shift-x: -30px` 与 `--dog-shift-x: var(--bubble-quarter-width)`。后续再调这些尺寸时，必须按“基线 + 增量”计算，不能直接把口头像素值写成绝对值。
+
+#### 首页当前定向尺寸覆盖（2026-05-14）
+
+以下规则当前写在 `src/styles/global.css`，用于首页标题、梦泡、狗狗视频的精调；除非用户重新指定方向，否则后续继续以这些值为现状基线微调。
+
+- `430 × 932`
+	- 标题：放大并下移，当前 `--home-word-font-size: 36px`，`--home-word-shift-y: 95px`
+	- 梦泡：下移，当前 `--bubble-shift-y: 65px`
+	- 狗狗视频：放大并右移下移，当前 `--dog-video-scale: 2.6`，`--dog-shift-x: 172px`，`--dog-drop-y: 38px`
+
+- `560 × 900`
+	- 标题：按移动端安全边界规则放大，当前 `--home-word-font-size: 34.3px`
+	- 梦泡：当前 `--bubble-shift-x: 123px`，`--bubble-shift-y: 43px`
+	- 狗狗视频：当前 `--dog-video-scale: 2.73`，`--dog-shift-x: 230.5px`，`--dog-drop-y: 58px`
+
+- `760 × 1000`
+	- 标题：当前 `--home-word-font-size: 41.9px`
+	- 梦泡：当前 `--bubble-scale: 0.9`，`--bubble-shift-x: 175px`，`--bubble-shift-y: 16px`
+	- 狗狗视频：当前 `--dog-video-scale: 2.62`，`--dog-shift-x: 245px`，`--dog-drop-y: 51px`
+
+- `900 × 1200`
+	- 标题：当前 `--home-word-font-size: 51.5px`，`--home-word-shift-y: 15px`
+	- 梦泡：当前 `--bubble-shift-x: 175px`，`--bubble-shift-y: 96px`
+	- 狗狗视频：当前 `--dog-video-scale: 2.38`，`--dog-shift-x: 188px`，`--dog-drop-y: 64.5px`
+
+- `1024 × 1366`
+	- 梦泡：当前 `--bubble-shift-x: 152.5px`，`--bubble-shift-y: 60px`
+	- 狗狗视频：当前是在 `901–1024` 基线之上继续叠加：`--dog-shift-x: calc(var(--bubble-half-width) + 61px)`，`--dog-drop-y: calc(var(--cushion-half-height) + 20px)`
+
+- `1280 × 800`
+	- 梦泡：当前 `--bubble-shift-x: -97px`，`--bubble-shift-y: -22px`
+	- 狗狗视频：当前是在 `1025–1280` 基线之上继续叠加：`--dog-shift-x: calc(var(--bubble-half-width) + 200px)`，`--dog-drop-y: calc(var(--cushion-half-height) + 45px)`
+
+- `1440 × 900`
+	- 梦泡：当前 `--bubble-shift-x: -55px`
+	- 狗狗视频：当前是在 `1281–1440` 基线之上继续叠加：`--dog-shift-x: calc(var(--bubble-half-width) + 146px)`，`--dog-drop-y: calc(var(--cushion-half-height) + 35px)`
+
+- `1660 × 1279`
+	- 标题：当前放大 25%，`--home-word-font-size: 76.25px`
+	- 梦泡：当前在桌面大屏基线之上为 `--bubble-scale: 0.9`，`--bubble-shift-x: -52.6px`，`--bubble-shift-y: 41.3px`
+	- 狗狗视频：当前 `--dog-shift-x: calc(var(--bubble-quarter-width) + 102.3px)`
+
+- `1834 × 1279`
+	- 标题：当前放大 25%，`--home-word-font-size: 76.25px`
+	- 梦泡：当前 `--bubble-scale: 0.95`，`--bubble-shift-x: -53.6px`，`--bubble-shift-y: 43px`
+	- 狗狗视频：当前 `--dog-shift-x: calc(var(--bubble-quarter-width) + 102.3px)`
+
+- `1920 × 1080`
+	- 标题：当前放大 25%，`--home-word-font-size: 76.25px`
+	- 梦泡：当前 `--bubble-scale: 0.95`
+	- 狗狗视频：当前 `--dog-shift-x: 128.7px`，`--dog-drop-y: 13px`
 
 当前方案：
 
