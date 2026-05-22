@@ -16,7 +16,7 @@ const STEAM_LAB_DEFAULTS = {
   density: 0.72,
   timeScale: 0.34,
   y: 0.02,
-  color: '#f5f8ff',
+  color: '#f9f9f9',
   rotationX: 0,
   rotationY: 0,
   rotationZ: 0,
@@ -32,7 +32,7 @@ const STEAM_LAYERS = [
 
 const STEAM_LAB_STORAGE_KEY = 'dogdream:steam-lab-settings:v1';
 const STEAM_LAB_PANEL_OPEN_STORAGE_KEY = 'dogdream:steam-lab-panel-open:v1';
-const CORRIDOR_SMOKE_STORAGE_KEY = 'dogdream:corridor-smoke-settings:v1';
+const CORRIDOR_SMOKE_STORAGE_KEY = 'dogdream:corridor-smoke-settings:v3';
 const STEAM_LAB_PANEL_ENTRY_ENABLED = false;
 
 function loadSteamLabPanelOpen() {

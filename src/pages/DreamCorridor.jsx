@@ -155,21 +155,21 @@ const CORRIDOR_RENDER_LENGTH = CORRIDOR_SEGMENT_LENGTH * 8;
 const FOCUSED_CAMERA_WALL_DISTANCE = 3.4;
 const CORRIDOR_DPR_CAP = 1.25;
 // 地板烟雾/云层：按 steamParticle 的思路重做，粒子更集中、抬升更明显，也能直接旋转调试。
-const GROUND_SMOKE_Y = 0.02;
-const GROUND_SMOKE_COUNT = 3000;
-const GROUND_SMOKE_AREA_WIDTH = 12;
-const GROUND_SMOKE_AREA_LENGTH = 2.2;
+const GROUND_SMOKE_Y = 0;
+const GROUND_SMOKE_COUNT = 12000;
+const GROUND_SMOKE_AREA_WIDTH = 6.9;
+const GROUND_SMOKE_AREA_LENGTH = 0.2;
 const LEGACY_GROUND_SMOKE_CAMERA_OFFSET_Z = 1.4;
-const GROUND_SMOKE_CAMERA_OFFSET_Z = 0;
-const GROUND_SMOKE_MAX_HEIGHT = 15;
-const GROUND_SMOKE_RISE_SPEED = 0.4;
-const GROUND_SMOKE_SPREAD = 0.3;
-const GROUND_SMOKE_TURBULENCE = 0.3;
-const GROUND_SMOKE_DENSITY = 0.4;
-const GROUND_SMOKE_PARTICLE_SIZE = 1.2;
-const GROUND_SMOKE_COLOR = '#f4f8fb';
-const GROUND_SMOKE_TIME_SCALE = 0.3;
-const GROUND_SMOKE_ROTATION_X = 0;
+const GROUND_SMOKE_CAMERA_OFFSET_Z = -7.39;
+const GROUND_SMOKE_MAX_HEIGHT = 24.2;
+const GROUND_SMOKE_RISE_SPEED = 1.2;
+const GROUND_SMOKE_SPREAD = 0.02;
+const GROUND_SMOKE_TURBULENCE = 0;
+const GROUND_SMOKE_DENSITY = 0.71;
+const GROUND_SMOKE_PARTICLE_SIZE = 6;
+const GROUND_SMOKE_COLOR = '#f9f9f9';
+const GROUND_SMOKE_TIME_SCALE = -0.01;
+const GROUND_SMOKE_ROTATION_X = -89.6;
 const GROUND_SMOKE_ROTATION_Y = 0;
 const GROUND_SMOKE_ROTATION_Z = 0;
 const GROUND_SMOKE_DEFAULTS = {
@@ -191,28 +191,30 @@ const GROUND_SMOKE_DEFAULTS = {
   rotationZ: GROUND_SMOKE_ROTATION_Z,
 };
 const GROUND_SMOKE_VISIBLE_CYCLES = 3;
-const GROUND_SMOKE_STORAGE_KEY = 'dogdream:corridor-smoke-settings:v1';
+const GROUND_SMOKE_STORAGE_KEY = 'dogdream:corridor-smoke-settings:v3';
 const GROUND_SMOKE_PANEL_OPEN_STORAGE_KEY = 'dogdream:corridor-smoke-panel-open:v1';
 const GROUND_SMOKE_PANEL_ENTRY_ENABLED = false;
 const SURFACE_WAVE_DEFAULTS = {
   enabled: true,
   mode: 'gradient',
-  singleColor: '#92e7ff',
-  gradientStart: '#8edcff',
-  gradientEnd: '#f8fbff',
-  speed: 0.42,
-  sparse: 0.72,
-  scale: 1.14,
-  intensity: 0.72,
-  opacity: 0.62,
-  floorBoost: 1.24,
-  wallBoost: 1.08,
-  ceilingBoost: 0.78,
-  rotationX: 0,
-  rotationY: 0,
-  rotationZ: 0,
+  singleColor: '#ccf7ff',
+  gradientStart: '#ffffff',
+  gradientEnd: '#000000',
+  speed: -0.25,
+  sparse: 0,
+  scale: 0.2,
+  intensity: 0,
+  opacity: 1.17,
+  nearBrightness: 2.5,
+  farBrightness: 0.56,
+  floorBoost: 1.98,
+  wallBoost: 1.98,
+  ceilingBoost: 2.44,
+  rotationX: 44.26,
+  rotationY: -84.1,
+  rotationZ: -48.69,
 };
-const SURFACE_WAVE_STORAGE_KEY = 'dogdream:corridor-surface-wave-settings:v2';
+const SURFACE_WAVE_STORAGE_KEY = 'dogdream:corridor-surface-wave-settings:v4';
 const SURFACE_WAVE_PANEL_OPEN_STORAGE_KEY = 'dogdream:corridor-surface-wave-panel-open:v1';
 const SURFACE_WAVE_PANEL_ENTRY_ENABLED = true;
 const SURFACE_WAVE_PANEL_DEFAULT_OPEN = true;
@@ -634,12 +636,15 @@ const SURFACE_WAVE_SURFACE_BOOSTS = {
 const SURFACE_WAVE_VERTEX_SHADER = `
   varying vec2 vUv;
   varying vec3 vWorldPosition;
+  varying float vViewDepth;
 
   void main() {
     vUv = uv;
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPosition.xyz;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    vViewDepth = max(0.0, -viewPosition.z);
+    gl_Position = projectionMatrix * viewPosition;
   }
 `;
 
@@ -650,6 +655,7 @@ const SURFACE_WAVE_FRAGMENT_SHADER = `
 
   varying vec2 vUv;
   varying vec3 vWorldPosition;
+  varying float vViewDepth;
 
   uniform sampler2D uMap;
   uniform float uTime;
@@ -658,6 +664,8 @@ const SURFACE_WAVE_FRAGMENT_SHADER = `
   uniform float uScale;
   uniform float uIntensity;
   uniform float uOpacity;
+  uniform float uNearBrightness;
+  uniform float uFarBrightness;
   uniform float uMode;
   uniform float uSurfaceBoost;
   uniform float uRotationX;
@@ -799,14 +807,16 @@ const SURFACE_WAVE_FRAGMENT_SHADER = `
     vec3 baseTex = texture2D(uMap, vUv).rgb;
     float baseLuma = dot(baseTex, vec3(0.299, 0.587, 0.114));
     float lumaGuard = mix(1.0, 0.82, smoothstep(0.62, 1.0, baseLuma));
-    float alpha = clamp(linePresence * (0.1 + uOpacity * 0.34) * (0.28 + intensity * 0.92) * pow(uSurfaceBoost, 1.18) * edgeFade * lumaGuard, 0.0, 0.72);
+    float depthMix = smoothstep(2.0, 34.0, vViewDepth);
+    float depthBrightness = mix(uNearBrightness, uFarBrightness, depthMix);
+    float alpha = clamp(linePresence * (0.1 + uOpacity * 0.34) * (0.28 + intensity * 0.92) * pow(uSurfaceBoost, 1.18) * edgeFade * lumaGuard * depthBrightness, 0.0, 0.72);
 
     float colorMixSeed = clamp(0.24 + breakupNoise * 0.36 + breakupNoiseB * 0.24 + strandsB * 0.16, 0.0, 1.0);
     vec3 gradientColor = mix(uGradientStart, uGradientEnd, colorMixSeed);
     vec3 waveColor = mix(uSingleColor, gradientColor, step(0.5, uMode));
 
     float whiteHot = clamp(strandsA * 0.32 + strandsB * 0.22, 0.0, 0.36);
-    vec3 glow = waveColor * linePresence * (0.72 + intensity * 0.5) * pow(uSurfaceBoost, 0.82);
+    vec3 glow = waveColor * linePresence * (0.72 + intensity * 0.5) * pow(uSurfaceBoost, 0.82) * depthBrightness;
     glow = mix(glow, vec3(1.0), whiteHot);
 
     if (alpha < 0.01) discard;
@@ -825,6 +835,8 @@ function createSurfaceWaveMaterial(texture, surfaceKey, settings, surfaceBoost =
       uScale: { value: settings.scale },
       uIntensity: { value: settings.intensity },
       uOpacity: { value: settings.opacity },
+      uNearBrightness: { value: settings.nearBrightness },
+      uFarBrightness: { value: settings.farBrightness },
       uMode: { value: settings.mode === 'gradient' ? 1 : 0 },
       uSurfaceBoost: { value: (SURFACE_WAVE_SURFACE_BOOSTS[surfaceKey] ?? 1) * surfaceBoost },
       uRotationX: { value: THREE.MathUtils.degToRad(settings.rotationX) },
@@ -894,6 +906,123 @@ function formatSmokeControlValue(key, value) {
 
   return `${safeValue.toFixed(3).replace(/\.0+$/, '').replace(/\.([1-9]*)0+$/, '.$1')}`;
 }
+
+const GROUND_SMOKE_FAB_STYLE = {
+  position: 'absolute',
+  right: 'clamp(18px, 3vw, 42px)',
+  bottom: 'clamp(78px, 9vw, 112px)',
+  zIndex: 7,
+  width: '46px',
+  height: '46px',
+  border: '1px solid rgba(255,255,255,0.18)',
+  borderRadius: '999px',
+  background: 'rgba(16, 20, 28, 0.72)',
+  color: '#eef7ff',
+  boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+  backdropFilter: 'blur(10px)',
+  cursor: 'pointer',
+  fontSize: '22px',
+  lineHeight: 1,
+};
+
+const GROUND_SMOKE_PANEL_STYLE = {
+  position: 'absolute',
+  right: 'clamp(16px, 2.4vw, 32px)',
+  top: 'clamp(64px, 8vw, 92px)',
+  zIndex: 7,
+  width: 'min(360px, calc(100vw - 32px))',
+  maxHeight: 'calc(100vh - 120px)',
+  overflow: 'auto',
+  borderRadius: '18px',
+  border: '1px solid rgba(255,255,255,0.14)',
+  background: 'rgba(13, 16, 24, 0.82)',
+  boxShadow: '0 18px 50px rgba(0,0,0,0.36)',
+  backdropFilter: 'blur(14px)',
+  color: '#eef7ff',
+};
+
+const GROUND_SMOKE_TOGGLE_STYLE = {
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  width: '100%',
+  padding: '10px 14px',
+  border: '0',
+  borderBottom: '1px solid rgba(255,255,255,0.08)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'inherit',
+  cursor: 'pointer',
+};
+
+const GROUND_SMOKE_PANEL_BODY_STYLE = {
+  padding: '14px',
+};
+
+const GROUND_SMOKE_PANEL_HEADER_STYLE = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  marginBottom: '12px',
+};
+
+const GROUND_SMOKE_RESET_STYLE = {
+  border: '1px solid rgba(255,255,255,0.16)',
+  borderRadius: '999px',
+  background: 'transparent',
+  color: 'inherit',
+  padding: '6px 12px',
+  cursor: 'pointer',
+};
+
+const GROUND_SMOKE_GRID_STYLE = {
+  display: 'grid',
+  gap: '10px',
+};
+
+const GROUND_SMOKE_CONTROL_STYLE = {
+  display: 'grid',
+  gap: '8px',
+  padding: '10px 12px',
+  borderRadius: '12px',
+  background: 'rgba(255,255,255,0.04)',
+};
+
+const GROUND_SMOKE_CONTROL_HEAD_STYLE = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  fontSize: '13px',
+};
+
+const GROUND_SMOKE_ROW_STYLE = {
+  display: 'grid',
+  gridTemplateColumns: '1fr auto',
+  alignItems: 'center',
+  gap: '8px',
+};
+
+const GROUND_SMOKE_INPUT_STYLE = {
+  width: '100%',
+};
+
+const GROUND_SMOKE_NUMBER_STYLE = {
+  width: '84px',
+  padding: '6px 8px',
+  borderRadius: '8px',
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(0,0,0,0.22)',
+  color: 'inherit',
+};
+
+const GROUND_SMOKE_COLOR_STYLE = {
+  width: '100%',
+  minHeight: '38px',
+  border: '0',
+  background: 'transparent',
+  padding: 0,
+};
 
 const GROUND_SMOKE_LAYERS = [
   { key: 'core', sizeBoost: 1.05, opacityBoost: 0.9, timeOffset: 0.0, driftBoost: 0.95 },
@@ -1065,6 +1194,7 @@ function GroundSmokeControls({ settings, onChange, onReset }) {
         onClick={toggleOpen}
         aria-label="打开烟雾调节面板"
         title="打开烟雾调节面板（Shift+S）"
+        style={GROUND_SMOKE_FAB_STYLE}
       >
         ⚙
       </button>
@@ -1072,26 +1202,26 @@ function GroundSmokeControls({ settings, onChange, onReset }) {
   }
 
   return (
-    <section className="smoke-panel" aria-label="烟雾调节面板">
-      <button className="smoke-panel__toggle" type="button" onClick={toggleOpen}>
+    <section className="smoke-panel" aria-label="烟雾调节面板" style={GROUND_SMOKE_PANEL_STYLE}>
+      <button className="smoke-panel__toggle" type="button" onClick={toggleOpen} style={GROUND_SMOKE_TOGGLE_STYLE}>
         收起
       </button>
 
       {open && (
-        <div className="smoke-panel__body">
-          <div className="smoke-panel__header">
+        <div className="smoke-panel__body" style={GROUND_SMOKE_PANEL_BODY_STYLE}>
+          <div className="smoke-panel__header" style={GROUND_SMOKE_PANEL_HEADER_STYLE}>
             <strong>烟雾调节</strong>
-            <button className="smoke-panel__reset" type="button" onClick={onReset}>恢复默认</button>
+            <button className="smoke-panel__reset" type="button" onClick={onReset} style={GROUND_SMOKE_RESET_STYLE}>恢复默认</button>
           </div>
 
-          <div className="smoke-panel__grid">
+          <div className="smoke-panel__grid" style={GROUND_SMOKE_GRID_STYLE}>
             {controls.map(([key, label, value, min, max, step]) => (
-              <label key={key} className="smoke-control">
-                <span>
+              <label key={key} className="smoke-control" style={GROUND_SMOKE_CONTROL_STYLE}>
+                <span style={GROUND_SMOKE_CONTROL_HEAD_STYLE}>
                   {label}
                   <output>{formatSmokeControlValue(key, value)}</output>
                 </span>
-                <div className="steam-lab-control__row">
+                <div className="steam-lab-control__row" style={GROUND_SMOKE_ROW_STYLE}>
                   <input
                     type="range"
                     min={min}
@@ -1099,6 +1229,7 @@ function GroundSmokeControls({ settings, onChange, onReset }) {
                     step={step}
                     value={value}
                     onChange={(event) => update(key, key === 'count' ? Number.parseInt(event.target.value, 10) : Number(event.target.value))}
+                    style={GROUND_SMOKE_INPUT_STYLE}
                   />
                   {key === 'rotationX' && (
                     <input
@@ -1109,17 +1240,19 @@ function GroundSmokeControls({ settings, onChange, onReset }) {
                       step="0.01"
                       value={Number(value).toFixed(2)}
                       onChange={(event) => updateNumber(key, event.target.value)}
+                      style={GROUND_SMOKE_NUMBER_STYLE}
                     />
                   )}
                 </div>
               </label>
             ))}
-            <label className="smoke-control smoke-control--color">
-              <span>颜色<output>{settings.color}</output></span>
+            <label className="smoke-control smoke-control--color" style={GROUND_SMOKE_CONTROL_STYLE}>
+              <span style={GROUND_SMOKE_CONTROL_HEAD_STYLE}>颜色<output>{settings.color}</output></span>
               <input
                 type="color"
                 value={settings.color}
                 onChange={(event) => update('color', event.target.value)}
+                style={GROUND_SMOKE_COLOR_STYLE}
               />
             </label>
           </div>
@@ -1268,6 +1401,136 @@ function formatWaveControlValue(key, value) {
   return `${Number(value).toFixed(3).replace(/\.0+$/, '').replace(/\.([1-9]*)0+$/, '.$1')}`;
 }
 
+const SURFACE_WAVE_FAB_STYLE = {
+  position: 'absolute',
+  right: 'clamp(18px, 3vw, 42px)',
+  bottom: 'clamp(22px, 4vw, 42px)',
+  zIndex: 6,
+  width: '46px',
+  height: '46px',
+  border: '1px solid rgba(255,255,255,0.18)',
+  borderRadius: '999px',
+  background: 'rgba(16, 20, 28, 0.72)',
+  color: '#eef7ff',
+  boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+  backdropFilter: 'blur(10px)',
+  cursor: 'pointer',
+  fontSize: '22px',
+  lineHeight: 1,
+};
+
+const SURFACE_WAVE_PANEL_STYLE = {
+  position: 'absolute',
+  right: 'clamp(16px, 2.4vw, 32px)',
+  top: 'clamp(64px, 8vw, 92px)',
+  zIndex: 6,
+  width: 'min(360px, calc(100vw - 32px))',
+  maxHeight: 'calc(100vh - 120px)',
+  overflow: 'auto',
+  borderRadius: '18px',
+  border: '1px solid rgba(255,255,255,0.14)',
+  background: 'rgba(13, 16, 24, 0.82)',
+  boxShadow: '0 18px 50px rgba(0,0,0,0.36)',
+  backdropFilter: 'blur(14px)',
+  color: '#eef7ff',
+};
+
+const SURFACE_WAVE_TOGGLE_STYLE = {
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  width: '100%',
+  padding: '10px 14px',
+  border: '0',
+  borderBottom: '1px solid rgba(255,255,255,0.08)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'inherit',
+  cursor: 'pointer',
+};
+
+const SURFACE_WAVE_PANEL_BODY_STYLE = {
+  padding: '14px',
+};
+
+const SURFACE_WAVE_PANEL_HEADER_STYLE = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  marginBottom: '12px',
+};
+
+const SURFACE_WAVE_RESET_STYLE = {
+  border: '1px solid rgba(255,255,255,0.16)',
+  borderRadius: '999px',
+  background: 'transparent',
+  color: 'inherit',
+  padding: '6px 12px',
+  cursor: 'pointer',
+};
+
+const SURFACE_WAVE_GRID_STYLE = {
+  display: 'grid',
+  gap: '10px',
+};
+
+const SURFACE_WAVE_CONTROL_STYLE = {
+  display: 'grid',
+  gap: '8px',
+  padding: '10px 12px',
+  borderRadius: '12px',
+  background: 'rgba(255,255,255,0.04)',
+};
+
+const SURFACE_WAVE_CONTROL_HEAD_STYLE = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  fontSize: '13px',
+};
+
+const SURFACE_WAVE_ROW_STYLE = {
+  display: 'grid',
+  gridTemplateColumns: '1fr auto',
+  alignItems: 'center',
+  gap: '8px',
+};
+
+const SURFACE_WAVE_INPUT_STYLE = {
+  width: '100%',
+};
+
+const SURFACE_WAVE_NUMBER_STYLE = {
+  width: '84px',
+  padding: '6px 8px',
+  borderRadius: '8px',
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(0,0,0,0.22)',
+  color: 'inherit',
+};
+
+const SURFACE_WAVE_SELECT_STYLE = {
+  width: '100%',
+  padding: '8px 10px',
+  borderRadius: '8px',
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(0,0,0,0.22)',
+  color: 'inherit',
+};
+
+const SURFACE_WAVE_CHECKBOX_STYLE = {
+  justifySelf: 'start',
+};
+
+const SURFACE_WAVE_COLOR_STYLE = {
+  width: '100%',
+  minHeight: '38px',
+  border: '0',
+  background: 'transparent',
+  padding: 0,
+};
+
 function SurfaceWaveControls({ settings, onChange, onReset }) {
   const [open, setOpen] = useState(() => loadSurfaceWavePanelOpen());
 
@@ -1278,6 +1541,8 @@ function SurfaceWaveControls({ settings, onChange, onReset }) {
     ['scale', '波纹尺度', settings.scale, 0.2, 5, 0.01],
     ['intensity', '扭曲强度', settings.intensity, 0, 3, 0.01],
     ['opacity', '流光浓度', settings.opacity, 0, 3, 0.01],
+    ['nearBrightness', '镜头侧亮度', settings.nearBrightness, 0, 2.5, 0.01],
+    ['farBrightness', '出口侧亮度', settings.farBrightness, 0, 2.5, 0.01],
     ['floorBoost', '地板强度', settings.floorBoost, 0, 4, 0.01],
     ['wallBoost', '墙面强度', settings.wallBoost, 0, 4, 0.01],
     ['ceilingBoost', '天花板强度', settings.ceilingBoost, 0, 4, 0.01],
@@ -1340,6 +1605,7 @@ function SurfaceWaveControls({ settings, onChange, onReset }) {
         onClick={toggleOpen}
         aria-label="打开表面波纹调节面板"
         title="打开表面波纹调节面板（Shift+W）"
+        style={SURFACE_WAVE_FAB_STYLE}
       >
         ≋
       </button>
@@ -1347,20 +1613,20 @@ function SurfaceWaveControls({ settings, onChange, onReset }) {
   }
 
   return (
-    <section className="smoke-panel surface-wave-panel" aria-label="表面波纹调节面板">
-      <button className="smoke-panel__toggle" type="button" onClick={toggleOpen}>
+    <section className="smoke-panel surface-wave-panel" aria-label="表面波纹调节面板" style={SURFACE_WAVE_PANEL_STYLE}>
+      <button className="smoke-panel__toggle" type="button" onClick={toggleOpen} style={SURFACE_WAVE_TOGGLE_STYLE}>
         收起
       </button>
 
-      <div className="smoke-panel__body">
-        <div className="smoke-panel__header">
+      <div className="smoke-panel__body" style={SURFACE_WAVE_PANEL_BODY_STYLE}>
+        <div className="smoke-panel__header" style={SURFACE_WAVE_PANEL_HEADER_STYLE}>
           <strong>表面波纹调节</strong>
-          <button className="smoke-panel__reset" type="button" onClick={onReset}>恢复默认</button>
+          <button className="smoke-panel__reset" type="button" onClick={onReset} style={SURFACE_WAVE_RESET_STYLE}>恢复默认</button>
         </div>
 
-        <div className="smoke-panel__grid">
-          <label className="smoke-control smoke-control--checkbox">
-            <span>
+        <div className="smoke-panel__grid" style={SURFACE_WAVE_GRID_STYLE}>
+          <label className="smoke-control smoke-control--checkbox" style={SURFACE_WAVE_CONTROL_STYLE}>
+            <span style={SURFACE_WAVE_CONTROL_HEAD_STYLE}>
               启用波纹
               <output>{formatWaveControlValue('enabled', settings.enabled)}</output>
             </span>
@@ -1368,27 +1634,28 @@ function SurfaceWaveControls({ settings, onChange, onReset }) {
               type="checkbox"
               checked={settings.enabled}
               onChange={(event) => update('enabled', event.target.checked)}
+              style={SURFACE_WAVE_CHECKBOX_STYLE}
             />
           </label>
 
-          <label className="smoke-control">
-            <span>
+          <label className="smoke-control" style={SURFACE_WAVE_CONTROL_STYLE}>
+            <span style={SURFACE_WAVE_CONTROL_HEAD_STYLE}>
               颜色模式
               <output>{formatWaveControlValue('mode', settings.mode)}</output>
             </span>
-            <select value={settings.mode} onChange={(event) => update('mode', event.target.value)}>
+            <select value={settings.mode} onChange={(event) => update('mode', event.target.value)} style={SURFACE_WAVE_SELECT_STYLE}>
               <option value="mono">单色</option>
               <option value="gradient">自定义渐变（强）</option>
             </select>
           </label>
 
           {controls.slice(1).map(([key, label, value, min, max, step]) => (
-            <label key={key} className="smoke-control">
-              <span>
+            <label key={key} className="smoke-control" style={SURFACE_WAVE_CONTROL_STYLE}>
+              <span style={SURFACE_WAVE_CONTROL_HEAD_STYLE}>
                 {label}
                 <output>{formatWaveControlValue(key, value)}</output>
               </span>
-              <div className="steam-lab-control__row">
+              <div className="steam-lab-control__row" style={SURFACE_WAVE_ROW_STYLE}>
                 <input
                   type="range"
                   min={min}
@@ -1396,6 +1663,7 @@ function SurfaceWaveControls({ settings, onChange, onReset }) {
                   step={step}
                   value={value}
                   onChange={(event) => update(key, Number(event.target.value))}
+                  style={SURFACE_WAVE_INPUT_STYLE}
                 />
                 {key.startsWith('rotation') && (
                   <input
@@ -1406,36 +1674,40 @@ function SurfaceWaveControls({ settings, onChange, onReset }) {
                     step="0.01"
                     value={Number(value).toFixed(2)}
                     onChange={(event) => update(key, Number(event.target.value))}
+                    style={SURFACE_WAVE_NUMBER_STYLE}
                   />
                 )}
               </div>
             </label>
           ))}
 
-          <label className="smoke-control smoke-control--color">
-            <span>波纹颜色<output>{settings.singleColor}</output></span>
+          <label className="smoke-control smoke-control--color" style={SURFACE_WAVE_CONTROL_STYLE}>
+            <span style={SURFACE_WAVE_CONTROL_HEAD_STYLE}>波纹颜色<output>{settings.singleColor}</output></span>
             <input
               type="color"
               value={settings.singleColor}
               onChange={(event) => update('singleColor', event.target.value)}
+              style={SURFACE_WAVE_COLOR_STYLE}
             />
           </label>
 
-          <label className="smoke-control smoke-control--color">
-            <span>渐变起点<output>{settings.gradientStart}</output></span>
+          <label className="smoke-control smoke-control--color" style={SURFACE_WAVE_CONTROL_STYLE}>
+            <span style={SURFACE_WAVE_CONTROL_HEAD_STYLE}>渐变起点<output>{settings.gradientStart}</output></span>
             <input
               type="color"
               value={settings.gradientStart}
               onChange={(event) => update('gradientStart', event.target.value)}
+              style={SURFACE_WAVE_COLOR_STYLE}
             />
           </label>
 
-          <label className="smoke-control smoke-control--color">
-            <span>渐变终点<output>{settings.gradientEnd}</output></span>
+          <label className="smoke-control smoke-control--color" style={SURFACE_WAVE_CONTROL_STYLE}>
+            <span style={SURFACE_WAVE_CONTROL_HEAD_STYLE}>渐变终点<output>{settings.gradientEnd}</output></span>
             <input
               type="color"
               value={settings.gradientEnd}
               onChange={(event) => update('gradientEnd', event.target.value)}
+              style={SURFACE_WAVE_COLOR_STYLE}
             />
           </label>
         </div>
