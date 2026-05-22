@@ -1,0 +1,723 @@
+﻿diff --git a/DEVELOPMENT_PLAN.md b/DEVELOPMENT_PLAN.md
+index 102bb5c..f998f8d 100644
+--- a/DEVELOPMENT_PLAN.md
++++ b/DEVELOPMENT_PLAN.md
+@@ -80,6 +80,19 @@
+ - `src/data/projects.js`锛氶」鐩暟鎹拰鐢绘璐村浘閰嶇疆銆? - `src/styles/global.css`锛氬叏绔欒瑙夋牱寮忋€侀椤靛竷灞€銆佹寜閽牱寮忋€佽蛋寤婂彔鍔犲眰銆? 
++## 褰撳墠璧板粖寰呭鐞?/ 寰呯‘璁ら棶棰橈紙2026-05-16锛?+
++浠ヤ笅闂宸茶褰曚负鏈樁娈典紭鍏堥」銆傚湪鐢ㄦ埛鏄庣‘纭鈥滃凡瑙ｅ喅鈥濆墠锛屼笅娆＄户缁棶鍒扳€滆繕鏈変粈涔堟病瑙ｅ喅鈥濇椂锛屽簲缁х画鎸夋湭纭椤瑰弽棣堬細
++
++1. 绉诲姩绔蛋寤婃墜鍔挎柟鍚戯細**鐢ㄦ埛鏆傛椂璁ゅ彲褰撳墠淇敼**锛屼絾鍦ㄦ渶缁堟暣浣撻獙鏀跺墠浠嶅彲缁х画瑙傚療銆?+2. 璧板粖婊戝姩瑙︽劅鍋忓急锛?*鐢ㄦ埛鏆傛椂璁ゅ彲褰撳墠淇敼**锛屼絾鍦ㄦ渶缁堟暣浣撻獙鏀跺墠浠嶅彲缁х画瑙傚療銆?+3. 鏌愪簺灞忓箷灏哄涓嬭蛋寤婄敾妗嗗嚭鐢伙細**浠嶆湭瑙ｅ喅**銆傜敤鎴锋槑纭弽棣堚€滃浘 1 娌℃湁瑙ｅ喅鈥濓紝涓旇姹傚悗缁敼鍔ㄤ笉瑕佸奖鍝嶇幇鏈変氦浜掗€昏緫銆?+4. 璧板粖鍗￠】鎺掓煡锛?*浠嶆湭瑙ｅ喅**銆傚綋鍓嶅垽鏂洿鍋忓悜璐村浘鍒嗚鲸鐜囥€佺汗鐞嗕笂浼犮€侀噰鏍蜂笌绉诲姩绔?GPU 璐熻浇闂锛岃€岄潪鐗规晥鏁伴噺锛涢渶缁х画浼樺寲銆?+5. 妯睆鎻愰啋搴旇鐩栨暣涓綉绔欙細**褰撳墠鐢ㄦ埛璁ゅ彲**銆?+6. 浠庘€滆繘鍏ユ繁姊︹€濊繘鍏ヤ笁绾ч〉鍚庯紝鐐瑰嚮鈥滃洖鍒拌蛋寤娾€濆簲涓庤仛鐒﹂〉涓殑鈥滆繑鍥炶蛋寤娾€濇晥鏋滀竴鑷达細鍗冲洖鍒板師鍦版极娓搁暅澶淬€佸彇娑堣仛鐒︼紝鑰屼笉鏄洖鍒板垵濮嬮〉锛屼篃涓嶆槸鍥炲埌鑱氱劍鎬併€?+
++澶囨敞锛氬仛瀹屼互涓婃潯鐩悗锛屽厛鍋滃湪鏈樁娈碉紝绛夊緟鐢ㄦ埛纭锛屽啀杩涘叆涓嬩竴闃舵銆?+
+ ## 閲嶈鎶€鏈鏄? 
+ ### 鐙楃嫍瑙嗛榛戝簳
+diff --git a/src/App.jsx b/src/App.jsx
+index a9793dc..e0f4ba2 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -1,32 +1,69 @@
+-import { useMemo, useState } from 'react';
++import { useEffect, useMemo, useState } from 'react';
+ import Home from './pages/Home.jsx';
+ import DreamCorridor from './pages/DreamCorridor.jsx';
+ import ProjectDream from './pages/ProjectDream.jsx';
+ import { projects } from './data/projects.js';
+ 
++const DESKTOP_BREAKPOINT = 1025;
++
++function shouldShowRotateTip() {
++  if (typeof window === 'undefined') return false;
++
++  const { innerWidth, innerHeight } = window;
++  const isDesktop = innerWidth >= DESKTOP_BREAKPOINT;
++  const isLandscape = innerWidth > innerHeight;
++
++  return !isDesktop && !isLandscape;
++}
++
+ export default function App() {
+   const [view, setView] = useState('home');
+   const [wakeSignal, setWakeSignal] = useState(0);
+   const [activeProjectId, setActiveProjectId] = useState(projects[0].id);
++  const [corridorReturnState, setCorridorReturnState] = useState(null);
++  const [showRotateTip, setShowRotateTip] = useState(() => shouldShowRotateTip());
+ 
+   const activeProject = useMemo(
+     () => projects.find((project) => project.id === activeProjectId) ?? projects[0],
+     [activeProjectId],
+   );
+ 
+-  function enterProject(projectId) {
++  useEffect(() => {
++    function updateRotateTipState() {
++      setShowRotateTip(shouldShowRotateTip());
++    }
++
++    updateRotateTipState();
++    window.addEventListener('resize', updateRotateTipState);
++    window.addEventListener('orientationchange', updateRotateTipState);
++
++    return () => {
++      window.removeEventListener('resize', updateRotateTipState);
++      window.removeEventListener('orientationchange', updateRotateTipState);
++    };
++  }, []);
++
++  function enterProject(projectId, corridorState) {
+     setActiveProjectId(projectId);
++    setCorridorReturnState(corridorState ?? null);
+     setView('project');
+   }
+ 
+   function wakeUp() {
+     setWakeSignal((signal) => signal + 1);
++    setCorridorReturnState(null);
+     setView('home');
+   }
+ 
++  let content = <Home wakeSignal={wakeSignal} onEnterDream={() => {
++    setCorridorReturnState(null);
++    setView('corridor');
++  }} />;
++
+   if (view === 'corridor') {
+-    return (
++    content = (
+       <DreamCorridor
++        initialState={corridorReturnState}
+         onEnterProject={enterProject}
+         onWakeUp={wakeUp}
+       />
+@@ -34,14 +71,43 @@ export default function App() {
+   }
+ 
+   if (view === 'project') {
+-    return (
++    content = (
+       <ProjectDream
+         project={activeProject}
+-        onBackToCorridor={() => setView('corridor')}
++        onBackToCorridor={() => {
++          setCorridorReturnState((current) => {
++            if (!current) return current;
++            return {
++              ...current,
++              resumeFromProject: true,
++            };
++          });
++          setView('corridor');
++        }}
+         onWakeUp={wakeUp}
+       />
+     );
+   }
+ 
+-  return <Home wakeSignal={wakeSignal} onEnterDream={() => setView('corridor')} />;
++  return (
++    <>
++      {content}
++
++      {showRotateTip && (
++        <div className="rotate-tip-overlay" role="dialog" aria-modal="true" aria-label="妯睆娴忚鎻愮ず">
++          <div className="rotate-tip-panel">
++            <div className="rotate-tip-icon" aria-hidden="true">
++              <span className="rotate-tip-phone">
++                <span className="rotate-tip-phone-screen" />
++              </span>
++            </div>
++            <div className="rotate-tip-copy">
++              <p className="rotate-tip-title">璇锋棆杞墜鏈?/p>
++              <p className="rotate-tip-subtitle">妯睆鑾峰緱鏈€浣充綋楠?/p>
++            </div>
++          </div>
++        </div>
++      )}
++    </>
++  );
+ }
+diff --git a/src/pages/DreamCorridor.jsx b/src/pages/DreamCorridor.jsx
+index 5a77045..a2d1989 100644
+--- a/src/pages/DreamCorridor.jsx
++++ b/src/pages/DreamCorridor.jsx
+@@ -8,12 +8,14 @@ import { projects } from '../data/projects.js';
+ 
+ const LOOP_LENGTH = 33;
+ const GALLERY_MAX_Z = 0;
+-const GALLERY_SCROLL_FACTOR = 0.012;
++const WHEEL_SCROLL_FACTOR = 0.018;
++const TOUCH_SCROLL_FACTOR = 0.03;
+ const MAX_WHEEL_DELTA = 90;
+-const MAX_TOUCH_DELTA = 96;
+-const TOUCH_SCROLL_MULTIPLIER = 1.75;
++const MAX_TOUCH_DELTA = 140;
++const TOUCH_SCROLL_MULTIPLIER = 2.8;
+ const TOUCH_AXIS_LOCK_THRESHOLD = 5;
+-const CAMERA_SMOOTH_FACTOR = 0.06;
++const CAMERA_SMOOTH_FACTOR = 0.16;
++const CAMERA_POSITION_LERP = 0.2;
+ const PAW_PHASE_PER_DELTA = 0.0042;
+ const MAX_PAW_PHASE_INCREMENT = 0.4;
+ const WALL_X = 3.25;
+@@ -24,10 +26,34 @@ const FRAME_HEIGHT = 1.68;
+ const LEFT_FRAME_Y = 1.76;
+ const RIGHT_FRAME_Y = 1.9;
+ const CAMERA_FOV = 50;
++
+ function getFocusZOffsetMagnitude(viewportWidth) {
++  if (viewportWidth <= 599) return 0.24;
++  if (viewportWidth <= 767) return 0.18;
++  if (viewportWidth <= 1023) return 0.08;
++  return 0;
++}
++
++function getFrameWallX(viewportWidth) {
++  if (viewportWidth <= 599) return WALL_X - 0.42;
++  if (viewportWidth <= 767) return WALL_X - 0.3;
++  if (viewportWidth <= 1023) return WALL_X - 0.18;
++  return WALL_X;
++}
++
++function getRoamingFrameZShift(viewportWidth) {
++  if (viewportWidth <= 599) return -0.75;
++  if (viewportWidth <= 767) return -0.55;
++  if (viewportWidth <= 1023) return -0.3;
+   return 0;
+ }
+ 
++function getTextureMaxDimension(viewportWidth, isCoarsePointer) {
++  if (isCoarsePointer) return 1024;
++  if (viewportWidth <= 1023) return 1536;
++  return 2048;
++}
++
+ function getFocusScreenShiftX(viewportWidth) {
+   if (viewportWidth <= 599) return 0.28;
+   if (viewportWidth <= 767) return 0.2;
+@@ -62,6 +88,36 @@ function getFocusCameraFov(viewportWidth) {
+   return CAMERA_FOV;
+ }
+ 
++function getFocusCameraState(project, viewportWidth) {
++  if (!project) {
++    return {
++      position: [0, 1.5, 0],
++      fov: getRoamingCameraFov(viewportWidth),
++    };
++  }
++
++  const focusZOffsetMagnitude = getFocusZOffsetMagnitude(viewportWidth);
++  const focusZOffset = project.side < 0 ? focusZOffsetMagnitude : -focusZOffsetMagnitude;
++  const focusScreenShiftY = getFocusScreenShiftY(viewportWidth);
++
++  return {
++    position: [
++      project.cameraX,
++      project.cameraY + focusScreenShiftY,
++      project.cameraZ + focusZOffset,
++    ],
++    fov: getFocusCameraFov(viewportWidth),
++  };
++}
++
++function getRoamingCameraFov(viewportWidth) {
++  if (viewportWidth <= 599) return 62;
++  if (viewportWidth <= 767) return 60;
++  if (viewportWidth <= 1023) return 56;
++  if (viewportWidth <= 1280) return 52;
++  return CAMERA_FOV;
++}
++
+ const VISIBLE_FRAME_CYCLES = 2;
+ const FRAME_RENDER_AHEAD_DISTANCE = LOOP_LENGTH * 1.45;
+ const FRAME_KEEP_BEHIND_DISTANCE = 0.6;
+@@ -123,22 +179,27 @@ const WORK_LAYOUT = [
+   { z: -31.7, side: 'right', rotZ: -0.06 },
+ ];
+ 
+-const FRAME_LAYOUTS = WORK_LAYOUT.map((layout, index) => {
+-  const sideSign = layout.side === 'left' ? -1 : 1;
+-  const y = layout.side === 'left' ? LEFT_FRAME_Y : RIGHT_FRAME_Y;
+-
+-  return {
+-    index,
+-    z: layout.z,
+-    rotZ: layout.rotZ,
+-    sideSign,
+-    x: sideSign * WALL_X,
+-    y,
+-    rotationY: layout.side === 'left' ? Math.PI / 2 : -Math.PI / 2,
+-    cameraX: sideSign * (WALL_X - FOCUSED_CAMERA_WALL_DISTANCE),
+-    lookAtX: sideSign * WALL_X,
+-  };
+-});
++function buildFrameLayouts(viewportWidth) {
++  const frameWallX = getFrameWallX(viewportWidth);
++  const roamingFrameZShift = getRoamingFrameZShift(viewportWidth);
++
++  return WORK_LAYOUT.map((layout, index) => {
++    const sideSign = layout.side === 'left' ? -1 : 1;
++    const y = layout.side === 'left' ? LEFT_FRAME_Y : RIGHT_FRAME_Y;
++
++    return {
++      index,
++      z: layout.z + roamingFrameZShift,
++      rotZ: layout.rotZ,
++      sideSign,
++      x: sideSign * frameWallX,
++      y,
++      rotationY: layout.side === 'left' ? Math.PI / 2 : -Math.PI / 2,
++      cameraX: sideSign * (frameWallX - FOCUSED_CAMERA_WALL_DISTANCE),
++      lookAtX: sideSign * frameWallX,
++    };
++  });
++}
+ 
+ function getNextCycleFrameVisibility(index, loopProgress) {
+   const pairIndex = Math.floor(index / 2);
+@@ -152,17 +213,18 @@ function getNextCycleFrameVisibility(index, loopProgress) {
+   );
+ }
+ 
+-function createGalleryFrames(activeCycle, cameraZ, loopProgress) {
++function createGalleryFrames(activeCycle, cameraZ, loopProgress, viewportWidth) {
+   const minVisibleZ = cameraZ - FRAME_RENDER_AHEAD_DISTANCE;
+   const maxVisibleZ = cameraZ + FRAME_KEEP_BEHIND_DISTANCE;
++  const frameLayouts = buildFrameLayouts(viewportWidth);
+ 
+   return Array.from({ length: VISIBLE_FRAME_CYCLES }).flatMap((_, cycleOffset) => {
+     const cycleIndex = activeCycle + cycleOffset;
+ 
+-    return FRAME_LAYOUTS.map((layout) => {
++    return frameLayouts.map((layout) => {
+       const project = projects[layout.index % projects.length];
+       const z = layout.z - cycleIndex * LOOP_LENGTH;
+-      const frameIndex = cycleIndex * FRAME_LAYOUTS.length + layout.index;
++      const frameIndex = cycleIndex * frameLayouts.length + layout.index;
+       const cycleDistance = cycleIndex - activeCycle;
+       let visibility = 0;
+ 
+@@ -197,10 +259,44 @@ function createGalleryFrames(activeCycle, cameraZ, loopProgress) {
+   });
+ }
+ 
+-function createSurfaceTexture(sourceTexture) {
++function createScaledTextureImage(sourceImage, maxDimension) {
++  if (!sourceImage?.width || !sourceImage?.height) {
++    return sourceImage;
++  }
++
++  const longestSide = Math.max(sourceImage.width, sourceImage.height);
++  if (longestSide <= maxDimension) {
++    return sourceImage;
++  }
++
++  const scale = maxDimension / longestSide;
++  const canvas = document.createElement('canvas');
++  canvas.width = Math.max(1, Math.round(sourceImage.width * scale));
++  canvas.height = Math.max(1, Math.round(sourceImage.height * scale));
++
++  const context = canvas.getContext('2d', { alpha: false, desynchronized: true });
++  if (!context) {
++    return sourceImage;
++  }
++
++  context.imageSmoothingEnabled = true;
++  context.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
++  return canvas;
++}
++
++function createSurfaceTexture(sourceTexture, maxDimension) {
++  const optimizedImage = createScaledTextureImage(sourceTexture.image, maxDimension);
++  if (optimizedImage !== sourceTexture.image) {
++    sourceTexture.image = optimizedImage;
++  }
++
+   sourceTexture.colorSpace = THREE.SRGBColorSpace;
+   sourceTexture.wrapS = THREE.ClampToEdgeWrapping;
+   sourceTexture.wrapT = THREE.ClampToEdgeWrapping;
++  sourceTexture.minFilter = THREE.LinearFilter;
++  sourceTexture.magFilter = THREE.LinearFilter;
++  sourceTexture.generateMipmaps = false;
++  sourceTexture.anisotropy = 1;
+   sourceTexture.needsUpdate = true;
+   return sourceTexture;
+ }
+@@ -213,7 +309,7 @@ function CorridorSurface({
+   debugColor,
+ }) {
+   return (
+-    <mesh position={position} rotation={rotation} receiveShadow>
++    <mesh position={position} rotation={rotation}>
+       <planeGeometry args={args} />
+       <meshBasicMaterial
+         map={debugColor ? null : texture}
+@@ -225,8 +321,12 @@ function CorridorSurface({
+   );
+ }
+ 
+-function CorridorGeometry() {
++function CorridorGeometry({ viewportWidth, isCoarsePointer }) {
+   const groupRef = useRef(null);
++  const textureMaxDimension = useMemo(
++    () => getTextureMaxDimension(viewportWidth, isCoarsePointer),
++    [viewportWidth, isCoarsePointer],
++  );
+   const rawTextures = useTexture({
+     ceiling: CEILING_TEXTURE_URL,
+     floor: FLOOR_TEXTURE_URL,
+@@ -234,11 +334,11 @@ function CorridorGeometry() {
+     rightWall: RIGHT_WALL_TEXTURE_URL,
+   });
+   const textures = useMemo(() => ({
+-    ceiling: createSurfaceTexture(rawTextures.ceiling),
+-    floor: createSurfaceTexture(rawTextures.floor),
+-    leftWall: createSurfaceTexture(rawTextures.leftWall),
+-    rightWall: createSurfaceTexture(rawTextures.rightWall),
+-  }), [rawTextures]);
++    ceiling: createSurfaceTexture(rawTextures.ceiling, textureMaxDimension),
++    floor: createSurfaceTexture(rawTextures.floor, textureMaxDimension),
++    leftWall: createSurfaceTexture(rawTextures.leftWall, textureMaxDimension),
++    rightWall: createSurfaceTexture(rawTextures.rightWall, textureMaxDimension),
++  }), [rawTextures, textureMaxDimension]);
+ 
+   useFrame((state) => {
+     if (!groupRef.current) return;
+@@ -381,15 +481,15 @@ function ExitVisualGlow() {
+ 
+ const PAW_HOLD_MS = 520;
+ 
+-function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onFocusProject, viewportWidth }) {
++function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onFocusProject, viewportWidth, isCoarsePointer }) {
+   const cameraZRef = useRef(targetZ);
+   const focusCameraVectorRef = useRef(new THREE.Vector3());
+   const focusLookAtVectorRef = useRef(new THREE.Vector3());
+   const focusViewOffsetRef = useRef(null);
+-  const focusFovRef = useRef(CAMERA_FOV);
++  const cameraFovRef = useRef(getRoamingCameraFov(viewportWidth));
+   const frames = useMemo(
+-    () => createGalleryFrames(activeCycle, targetZ, loopProgress),
+-    [activeCycle, targetZ, loopProgress],
++    () => createGalleryFrames(activeCycle, targetZ, loopProgress, viewportWidth),
++    [activeCycle, targetZ, loopProgress, viewportWidth],
+   );
+   const visibleFrames = focusedProject ? [focusedProject] : frames;
+ 
+@@ -426,8 +526,8 @@ function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onF
+         shouldUpdateProjectionMatrix = true;
+       }
+ 
+-      if (focusFovRef.current !== nextFocusFov) {
+-        focusFovRef.current = nextFocusFov;
++      if (cameraFovRef.current !== nextFocusFov) {
++        cameraFovRef.current = nextFocusFov;
+         camera.fov = nextFocusFov;
+         shouldUpdateProjectionMatrix = true;
+       }
+@@ -463,9 +563,11 @@ function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onF
+       shouldResetProjectionMatrix = true;
+     }
+ 
+-    if (focusFovRef.current !== CAMERA_FOV) {
+-      focusFovRef.current = CAMERA_FOV;
+-      camera.fov = CAMERA_FOV;
++    const roamingFov = getRoamingCameraFov(viewportWidth);
++
++    if (cameraFovRef.current !== roamingFov) {
++      cameraFovRef.current = roamingFov;
++      camera.fov = roamingFov;
+       shouldResetProjectionMatrix = true;
+     }
+ 
+@@ -474,9 +576,9 @@ function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onF
+     }
+ 
+     cameraZRef.current += (targetZ - cameraZRef.current) * CAMERA_SMOOTH_FACTOR;
+-    camera.position.x += (0 - camera.position.x) * 0.12;
+-    camera.position.y += (1.5 - camera.position.y) * 0.12;
+-    camera.position.z += (cameraZRef.current - camera.position.z) * 0.12;
++    camera.position.x += (0 - camera.position.x) * CAMERA_POSITION_LERP;
++    camera.position.y += (1.5 - camera.position.y) * CAMERA_POSITION_LERP;
++    camera.position.z += (cameraZRef.current - camera.position.z) * CAMERA_POSITION_LERP;
+     camera.lookAt(0, 1.5, camera.position.z - 8);
+   });
+ 
+@@ -486,7 +588,7 @@ function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onF
+       <fog attach="fog" args={[EXIT_VISUAL.fog.color, EXIT_VISUAL.fog.near, EXIT_VISUAL.fog.far]} />
+       <ambientLight intensity={1.45} />
+       <directionalLight position={[0, 6, -5]} intensity={0.52} color="#ffffff" />
+-      <CorridorGeometry />
++      <CorridorGeometry viewportWidth={viewportWidth} isCoarsePointer={isCoarsePointer} />
+       <ExitVisualGlow />
+       {visibleFrames.map((project) => (
+         <FramePortal
+@@ -500,21 +602,23 @@ function CorridorScene({ targetZ, activeCycle, loopProgress, focusedProject, onF
+   );
+ }
+ 
+-export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+-  const [targetZ, setTargetZ] = useState(0);
+-  const [focusedProject, setFocusedProject] = useState(null);
++export default function DreamCorridor({ initialState, onEnterProject, onWakeUp }) {
++  const initialTargetZ = initialState?.targetZ ?? 0;
++  const [targetZ, setTargetZ] = useState(initialTargetZ);
++  const [focusedProject, setFocusedProject] = useState(initialState?.focusedProject ?? null);
+   const [pawActive, setPawActive] = useState(false);
+   const [pawPhase, setPawPhase] = useState(0);
+   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+   const pawTimerRef = useRef(null);
+   const wheelFrameRef = useRef(0);
++  const returnToRoamFrameRef = useRef(0);
+   const touchStateRef = useRef({
+     active: false,
+     axis: null,
+     lastX: 0,
+     lastY: 0,
+   });
+-  const targetZRef = useRef(0);
++  const targetZRef = useRef(initialTargetZ);
+   const pawPhaseRef = useRef(0);
+   const motionQueueRef = useRef({
+     hasTargetZ: false,
+@@ -524,7 +628,19 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+   });
+   const activeCycle = Math.max(0, Math.floor(Math.abs(targetZ) / LOOP_LENGTH));
+   const loopProgress = Math.abs(targetZ % LOOP_LENGTH) / LOOP_LENGTH;
+-  const corridorDpr = useMemo(() => [1, Math.min(window.devicePixelRatio || 1, CORRIDOR_DPR_CAP)], []);
++  const isCoarsePointer = useMemo(() => window.matchMedia('(pointer: coarse)').matches, []);
++  const corridorDpr = useMemo(
++    () => [1, Math.min(window.devicePixelRatio || 1, isCoarsePointer ? 1 : CORRIDOR_DPR_CAP)],
++    [isCoarsePointer],
++  );
++  const initialCameraState = useMemo(
++    () => getFocusCameraState(initialState?.focusedProject ?? null, viewportWidth),
++    [initialState, viewportWidth],
++  );
++
++  useEffect(() => {
++    targetZRef.current = initialTargetZ;
++  }, [initialTargetZ]);
+ 
+   const flushMotionQueue = useCallback(() => {
+     wheelFrameRef.current = 0;
+@@ -549,8 +665,21 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+   useEffect(() => () => {
+     window.clearTimeout(pawTimerRef.current);
+     window.cancelAnimationFrame(wheelFrameRef.current);
++    window.cancelAnimationFrame(returnToRoamFrameRef.current);
+   }, []);
+ 
++  useEffect(() => {
++    if (!initialState?.resumeFromProject || !initialState?.focusedProject) {
++      return undefined;
++    }
++
++    returnToRoamFrameRef.current = window.requestAnimationFrame(() => {
++      setFocusedProject(null);
++    });
++
++    return () => window.cancelAnimationFrame(returnToRoamFrameRef.current);
++  }, [initialState]);
++
+   useEffect(() => {
+     function handleResize() {
+       setViewportWidth(window.innerWidth);
+@@ -566,13 +695,15 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+     pawTimerRef.current = window.setTimeout(() => setPawActive(false), PAW_HOLD_MS);
+   }, []);
+ 
+-  const applyScrollDelta = useCallback((rawDelta) => {
++  const applyScrollDelta = useCallback((rawDelta, inputType = 'wheel') => {
+     if (focusedProject) return;
+ 
+-    const delta = Math.max(-MAX_WHEEL_DELTA, Math.min(MAX_WHEEL_DELTA, rawDelta));
++    const maxDelta = inputType === 'touch' ? MAX_TOUCH_DELTA : MAX_WHEEL_DELTA;
++    const scrollFactor = inputType === 'touch' ? TOUCH_SCROLL_FACTOR : WHEEL_SCROLL_FACTOR;
++    const delta = Math.max(-maxDelta, Math.min(maxDelta, rawDelta));
+     if (delta === 0) return;
+ 
+-    const nextTargetZ = Math.min(targetZRef.current - delta * GALLERY_SCROLL_FACTOR, GALLERY_MAX_Z);
++    const nextTargetZ = Math.min(targetZRef.current - delta * scrollFactor, GALLERY_MAX_Z);
+     targetZRef.current = nextTargetZ;
+     motionQueueRef.current.nextTargetZ = nextTargetZ;
+     motionQueueRef.current.hasTargetZ = true;
+@@ -593,7 +724,7 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+   }, [extendPawVisibility, focusedProject, scheduleMotionFlush]);
+ 
+   function handleWheel(event) {
+-    applyScrollDelta(event.deltaY);
++    applyScrollDelta(event.deltaY, 'wheel');
+   }
+ 
+   function handleTouchStart(event) {
+@@ -615,7 +746,7 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+ 
+     const touch = event.touches[0];
+     const deltaX = touchState.lastX - touch.clientX;
+-    const deltaY = touchState.lastY - touch.clientY;
++    const deltaY = touch.clientY - touchState.lastY;
+ 
+     if (!touchState.axis) {
+       if (Math.abs(deltaX) < TOUCH_AXIS_LOCK_THRESHOLD && Math.abs(deltaY) < TOUCH_AXIS_LOCK_THRESHOLD) {
+@@ -632,7 +763,7 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+ 
+     event.preventDefault();
+     const scaledDelta = Math.max(-MAX_TOUCH_DELTA, Math.min(MAX_TOUCH_DELTA, deltaY * TOUCH_SCROLL_MULTIPLIER));
+-    applyScrollDelta(scaledDelta);
++    applyScrollDelta(scaledDelta, 'touch');
+   }
+ 
+   function handleTouchEnd() {
+@@ -650,7 +781,10 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+ 
+   function handleEnterDeepDream() {
+     if (!focusedProject) return;
+-    onEnterProject(focusedProject.id);
++    onEnterProject(focusedProject.id, {
++      targetZ: targetZRef.current,
++      focusedProject,
++    });
+   }
+ 
+   function handleReturnToCorridor() {
+@@ -672,9 +806,9 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+       onTouchCancel={handleTouchEnd}
+     >
+       <Canvas
+-        camera={{ position: [0, 1.5, 0], fov: CAMERA_FOV, near: 0.1, far: 120 }}
++        camera={{ position: initialCameraState.position, fov: initialCameraState.fov, near: 0.1, far: 120 }}
+         dpr={corridorDpr}
+-        gl={{ powerPreference: 'high-performance' }}
++        gl={{ powerPreference: 'high-performance', antialias: false, alpha: false, stencil: false }}
+       >
+         <CorridorScene
+           targetZ={targetZ}
+@@ -683,6 +817,7 @@ export default function DreamCorridor({ onEnterProject, onWakeUp }) {
+           focusedProject={focusedProject}
+           onFocusProject={handleFocusProject}
+           viewportWidth={viewportWidth}
++          isCoarsePointer={isCoarsePointer}
+         />
+       </Canvas>
+ 
+diff --git a/src/pages/Home.jsx b/src/pages/Home.jsx
+index c654362..b20c2ed 100644
+--- a/src/pages/Home.jsx
++++ b/src/pages/Home.jsx
+@@ -4,17 +4,6 @@ import wakeupVideo from '../../wakeup-ffmpeg-1.webm?url';
+ import sleepVideo from '../../sleep-ffmpeg-1.webm?url';
+ 
+ const ASSET_PATH = '/assets/';
+-const DESKTOP_BREAKPOINT = 1025;
+-
+-function shouldShowRotateTip() {
+-  if (typeof window === 'undefined') return false;
+-
+-  const { innerWidth, innerHeight } = window;
+-  const isDesktop = innerWidth >= DESKTOP_BREAKPOINT;
+-  const isLandscape = innerWidth > innerHeight;
+-
+-  return !isDesktop && !isLandscape;
+-}
+ 
+ export default function Home({ wakeSignal, onEnterDream }) {
+   const videoRef = useRef(null);
+@@ -22,7 +11,6 @@ export default function Home({ wakeSignal, onEnterDream }) {
+   const [phase, setPhase] = useState(wakeSignal > 0 ? 'waking' : 'intro');
+   const [bubbleBroken, setBubbleBroken] = useState(false);
+   const [videoSource, setVideoSource] = useState(wakeSignal > 0 ? wakeupVideo : walkVideo);
+-  const [showRotateTip, setShowRotateTip] = useState(() => shouldShowRotateTip());
+   const [sleepButtonTop, setSleepButtonTop] = useState(null);
+   const showBubble = phase === 'dreamReady';
+   const showSleep = phase === 'awake';
+@@ -77,23 +65,8 @@ export default function Home({ wakeSignal, onEnterDream }) {
+     return () => window.clearTimeout(timerId);
+   }, [phase, videoSource]);
+ 
+-  useEffect(() => {
+-    function updateRotateTipState() {
+-      setShowRotateTip(shouldShowRotateTip());
+-    }
+-
+-    updateRotateTipState();
+-    window.addEventListener('resize', updateRotateTipState);
+-    window.addEventListener('orientationchange', updateRotateTipState);
+-
+-    return () => {
+-      window.removeEventListener('resize', updateRotateTipState);
+-      window.removeEventListener('orientationchange', updateRotateTipState);
+-    };
+-  }, []);
+-
+   useLayoutEffect(() => {
+-    if (!showSleep || showRotateTip) {
++    if (!showSleep) {
+       setSleepButtonTop(null);
+       return undefined;
+     }
+@@ -136,7 +109,7 @@ export default function Home({ wakeSignal, onEnterDream }) {
+       window.removeEventListener('orientationchange', scheduleMeasurement);
+       resizeObserver?.disconnect();
+     };
+-  }, [showRotateTip, showSleep, videoSource]);
++  }, [showSleep, videoSource]);
+ 
+   function handleVideoEnded() {
+     setPhase((current) => {
+@@ -150,11 +123,10 @@ export default function Home({ wakeSignal, onEnterDream }) {
+   }
+ 
+   return (
+-    <main className={`home page-shell ${showRotateTip ? 'page-shell--locked' : ''}`}>
++    <main className="home page-shell">
+       <section
+-        className={`home-card ${showRotateTip ? 'is-hidden-for-rotate-tip' : ''}`}
++        className="home-card"
+         aria-label="Dog dream home scene"
+-        aria-hidden={showRotateTip}
+       >
+         <h1 className="home-word">EVERYTHING YOU SEE IS PART OF A DREAM</h1>
+         <div className="home-line" />
+@@ -195,22 +167,6 @@ export default function Home({ wakeSignal, onEnterDream }) {
+           </button>
+         )}
+       </section>
+-
+-      {showRotateTip && (
+-        <div className="rotate-tip-overlay" role="dialog" aria-modal="true" aria-label="妯睆娴忚鎻愮ず">
+-          <div className="rotate-tip-panel">
+-            <div className="rotate-tip-icon" aria-hidden="true">
+-              <span className="rotate-tip-phone">
+-                <span className="rotate-tip-phone-screen" />
+-              </span>
+-            </div>
+-            <div className="rotate-tip-copy">
+-              <p className="rotate-tip-title">璇锋棆杞墜鏈?/p>
+-              <p className="rotate-tip-subtitle">妯睆鑾峰緱鏈€浣充綋楠?/p>
+-            </div>
+-          </div>
+-        </div>
+-      )}
+     </main>
+   );
+ }
+diff --git a/src/styles/global.css b/src/styles/global.css
+index 115a84d..ca0c830 100644
+--- a/src/styles/global.css
++++ b/src/styles/global.css
+@@ -160,7 +160,7 @@ button {
+ .rotate-tip-overlay {
+   position: fixed;
+   inset: 0;
+-  z-index: 40;
++  z-index: 9999;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+@@ -414,6 +414,7 @@ button {
+ 
+ .corridor {
+   background: #f5f5f1;
++  touch-action: none;
+ }
+ 
+ .corridor canvas {

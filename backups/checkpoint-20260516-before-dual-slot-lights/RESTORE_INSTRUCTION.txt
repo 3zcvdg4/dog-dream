@@ -1,0 +1,9 @@
+当前检查点保存于 2026-05-16，记录“左右槽位灯常量化 + 新增右侧对应灯”改动前的源码状态。
+
+已备份文件：
+- DreamCorridor.jsx
+- FramePortal.jsx
+- projects.js
+- DEVELOPMENT_PLAN.md
+
+如需手动恢复，可直接用本目录中的同名文件覆盖回项目原位置。

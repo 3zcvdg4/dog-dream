@@ -1,0 +1,14 @@
+﻿当前备份名称：checkpoint-20260520-before-corridor-shadow-pass
+
+包含文件：
+- src/pages/DreamCorridor.jsx
+- src/components/FramePortal.jsx
+- src/data/projects.js
+- src/styles/global.css
+- DEVELOPMENT_PLAN.md
+
+恢复方式（手动覆盖回去）：
+- 将本目录内同名文件复制回项目原路径。
+
+说明：
+- 这是在“走廊第 3 项：墙壁 / 地板阴影方案”开始前保存的检查点。

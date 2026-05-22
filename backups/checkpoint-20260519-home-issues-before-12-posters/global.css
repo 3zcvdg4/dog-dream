@@ -414,6 +414,7 @@ button {
 
 .corridor {
   background: #f5f5f1;
+  touch-action: none;
 }
 
 .corridor canvas {
@@ -527,13 +528,13 @@ button {
   left: 50%;
   bottom: 0;
   z-index: 3;
-  width: 64px;
-  height: 52px;
+  width: clamp(44px, 4.6vw, 89px);
+  aspect-ratio: 89 / 40;
   pointer-events: none;
   opacity: calc(var(--paw-visibility, 0) * var(--paw-opacity, 0));
   transform-origin: 50% 80%;
   transform: translateX(-50%) translate(var(--paw-x, 0), var(--paw-y, 0)) scale(var(--paw-scale, 1)) rotate(var(--paw-rotate, 0deg));
-  transition: opacity 180ms ease;
+  transition: opacity var(--paw-fade-duration, 700ms) ease-out;
   will-change: transform, opacity;
 }
 
@@ -544,45 +545,13 @@ button {
 .paw-overlay__print {
   position: absolute;
   inset: 0;
-  animation: pawStepAppear 180ms ease-out both;
-}
-
-.paw-overlay__pad,
-.paw-overlay__toe {
-  position: absolute;
-  display: block;
-  background: rgb(68 63 56 / 78%);
-  box-shadow: 0 0 12px rgb(60 55 48 / 9%);
-}
-
-.paw-overlay__pad {
-  left: 50%;
-  bottom: 3px;
-  width: 28px;
-  height: 19px;
-  border-radius: 54% 54% 46% 46% / 60% 60% 40% 40%;
-  transform: translateX(-50%);
-}
-
-.paw-overlay__toe {
-  width: 9px;
-  height: 9px;
-  border-radius: 50% 50% 45% 45%;
-}
-
-.paw-overlay__toe--left {
-  left: 15px;
-  top: 12px;
-}
-
-.paw-overlay__toe--middle {
-  left: 27px;
-  top: 6px;
-}
-
-.paw-overlay__toe--right {
-  right: 15px;
-  top: 12px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  transform: perspective(360px) rotateX(38deg);
+  transform-origin: center bottom;
+  animation: pawStepAppear 220ms ease-out both;
 }
 
 .wake-button {
@@ -590,6 +559,29 @@ button {
   right: clamp(18px, 3vw, 42px);
   bottom: clamp(18px, 3vw, 38px);
   z-index: 6;
+}
+
+/* ── 新版脚印（PawTrail 滚轮触发）── */
+.paw-trail {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.paw-pair {
+  position: absolute;
+  transform: translateY(-50%);
+}
+
+.paw-print {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 89px;
+  user-select: none;
+  will-change: opacity;
 }
 
 .focus-copy {
@@ -651,59 +643,28 @@ button {
 
 .focus-actions,
 .project-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
+  display: flex;
   gap: 12px;
+  flex-wrap: wrap;
   margin-top: 18px;
-  container-type: inline-size;
 }
 
 .focus-actions .site-button,
 .project-actions .site-button,
 .sleep-button,
 .wake-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  min-width: 0;
-  max-width: 100%;
-  padding: 0 clamp(16px, 2.1vw, 29px);
+  min-height: 26px;
+  padding: 0 25px;
   border: 1px solid rgb(255 255 255 / 70%);
   border-radius: 999px;
   background: linear-gradient(180deg, rgb(255 255 255 / 92%), rgb(242 242 240 / 72%));
   color: rgb(24 24 22 / 88%);
-  font-size: clamp(12px, 0.92vw, 15px);
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.01em;
-  line-height: 1;
-  white-space: nowrap;
   box-shadow: 0 10px 28px rgb(15 23 42 / 10%), inset 0 1px 0 rgb(255 255 255 / 88%);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
-}
-
-.focus-actions .site-button,
-.project-actions .site-button {
-  width: 100%;
-}
-
-@container (max-width: 360px) {
-  .focus-actions .site-button,
-  .project-actions .site-button {
-    padding-inline: 14px;
-    font-size: 13px;
-    letter-spacing: -0.02em;
-  }
-}
-
-@container (max-width: 300px) {
-  .focus-actions .site-button,
-  .project-actions .site-button {
-    padding-inline: 10px;
-    font-size: 12px;
-  }
 }
 
 
@@ -898,14 +859,14 @@ button {
 @keyframes pawStepAppear {
   0% {
     opacity: 0;
-    transform: translateY(6px) scale(0.92);
+    transform: perspective(360px) rotateX(38deg) translateY(8px) scale(0.9);
   }
-  35% {
-    opacity: 1;
+  40% {
+    opacity: 0.92;
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: perspective(360px) rotateX(38deg) translateY(0) scale(1);
   }
 }
 
@@ -947,7 +908,6 @@ button {
     width: min(var(--home-word-safe-width), var(--home-word-max-width));
     display: block;
     overflow: visible;
-    line-clamp: unset;
     -webkit-box-orient: initial;
     -webkit-line-clamp: unset;
     white-space: normal;
@@ -1009,6 +969,79 @@ button {
 
   .project-placeholders {
     grid-template-columns: 1fr;
+  }
+}
+
+.corridor {
+  --focus-copy-top: 50%;
+  --focus-copy-right: clamp(68px, 7.45vw, 112px);
+  --focus-copy-left: auto;
+  --focus-copy-bottom: auto;
+  --focus-copy-width: clamp(288px, 15.6445vw, 400.5px);
+  --focus-copy-min-height: clamp(172.8px, 18.2955vh, 234px);
+  --focus-copy-padding: clamp(18px, 0.8594vw, 21.6px);
+  --focus-copy-radius: clamp(12.6px, 0.6328vw, 16.2px);
+  --focus-copy-translate-x: calc(-1 * clamp(190px, 14.75vw, 256px));
+  --focus-copy-translate-y: -50%;
+  --focus-copy-title-size: 24px;
+  --focus-copy-summary-size: 13px;
+}
+
+.focus-copy {
+  top: var(--focus-copy-top);
+  right: var(--focus-copy-right);
+  bottom: var(--focus-copy-bottom);
+  left: var(--focus-copy-left);
+  width: min(var(--focus-copy-width), calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  min-height: var(--focus-copy-min-height, auto);
+  min-width: 0;
+  padding: var(--focus-copy-padding);
+  border-radius: var(--focus-copy-radius);
+  transform: translate(var(--focus-copy-translate-x), var(--focus-copy-translate-y));
+}
+
+.focus-copy h2 {
+  font-size: var(--focus-copy-title-size);
+  line-height: 1.02;
+}
+
+.focus-copy p:not(.eyebrow) {
+  font-size: var(--focus-copy-summary-size);
+  line-height: 1.62;
+}
+
+.focus-actions .site-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 1440px) {
+  .corridor {
+    --focus-copy-right: clamp(134px, 10vw, 214px);
+    --focus-copy-width: clamp(324px, 15.6445vw, 400.5px);
+    --focus-copy-min-height: clamp(194px, 18.2955vh, 234px);
+    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
+    --focus-copy-translate-x: calc(-1 * clamp(336px, 19.1vw, 438px));
+    --focus-copy-title-size: 27px;
+  }
+}
+
+@media (min-width: 1660px) {
+  .home-card {
+    --dog-video-scale: 2.16;
+    --dog-offset-x: clamp(348px, 18.4vw, 488px);
+    --dog-lift: clamp(-58px, -2.6vw, -32px);
+  }
+
+  .corridor {
+    --focus-copy-right: clamp(156px, 9.2vw, 236px);
+    --focus-copy-width: clamp(351px, 15.6445vw, 400.5px);
+    --focus-copy-min-height: clamp(205px, 18.2955vh, 234px);
+    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
+    --focus-copy-translate-x: calc(-1 * clamp(398px, 20.4vw, 526px));
+    --focus-copy-title-size: 28px;
   }
 }
 
@@ -1243,67 +1276,6 @@ button {
   }
 }
 
-.corridor {
-  --focus-copy-top: 50%;
-  --focus-copy-right: clamp(68px, 7.45vw, 112px);
-  --focus-copy-left: auto;
-  --focus-copy-bottom: auto;
-  --focus-copy-width: clamp(288px, 15.6445vw, 400.5px);
-  --focus-copy-min-height: clamp(172.8px, 18.2955vh, 234px);
-  --focus-copy-padding: clamp(18px, 0.8594vw, 21.6px);
-  --focus-copy-radius: clamp(12.6px, 0.6328vw, 16.2px);
-  --focus-copy-translate-x: calc(-1 * clamp(190px, 14.75vw, 256px));
-  --focus-copy-translate-y: -50%;
-  --focus-copy-title-size: 24px;
-  --focus-copy-summary-size: 13px;
-}
-
-.focus-copy {
-  top: var(--focus-copy-top);
-  right: var(--focus-copy-right);
-  bottom: var(--focus-copy-bottom);
-  left: var(--focus-copy-left);
-  width: min(var(--focus-copy-width), calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  min-height: var(--focus-copy-min-height, auto);
-  min-width: 0;
-  padding: var(--focus-copy-padding);
-  border-radius: var(--focus-copy-radius);
-  transform: translate(var(--focus-copy-translate-x), var(--focus-copy-translate-y));
-}
-
-.focus-copy h2 {
-  font-size: var(--focus-copy-title-size);
-  line-height: 1.02;
-}
-
-.focus-copy p:not(.eyebrow) {
-  font-size: var(--focus-copy-summary-size);
-  line-height: 1.62;
-}
-
-@media (min-width: 1440px) {
-  .corridor {
-    --focus-copy-right: clamp(134px, 10vw, 214px);
-    --focus-copy-width: clamp(324px, 15.6445vw, 400.5px);
-    --focus-copy-min-height: clamp(194px, 18.2955vh, 234px);
-    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
-    --focus-copy-translate-x: calc(-1 * clamp(336px, 19.1vw, 438px));
-    --focus-copy-title-size: 27px;
-  }
-}
-
-@media (min-width: 1660px) {
-  .corridor {
-    --focus-copy-right: clamp(156px, 9.2vw, 236px);
-    --focus-copy-width: clamp(351px, 15.6445vw, 400.5px);
-    --focus-copy-min-height: clamp(205px, 18.2955vh, 234px);
-    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
-    --focus-copy-translate-x: calc(-1 * clamp(398px, 20.4vw, 526px));
-    --focus-copy-title-size: 28px;
-  }
-}
-
 @media (max-width: 1023px) and (min-width: 768px) {
   .corridor {
     --focus-copy-top: auto;
@@ -1342,12 +1314,15 @@ button {
 
   .focus-actions {
     gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: center;
   }
 
   .focus-actions .site-button,
   .project-actions .site-button {
-    min-height: 30px;
-    padding: 0 25px;
+    min-height: 26px;
+    padding: 0 22px;
+    white-space: nowrap;
   }
 
   .corridor.is-focused .wake-button {
@@ -1374,13 +1349,16 @@ button {
 
   .focus-actions {
     gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: center;
     margin-top: 18px;
   }
 
   .focus-actions .site-button,
   .project-actions .site-button {
-    min-height: 28px;
-    padding: 0 23px;
+    min-height: 24px;
+    padding: 0 20px;
+    white-space: nowrap;
   }
 
   .corridor-status {
@@ -1392,8 +1370,8 @@ button {
     top: 14px;
     right: 14px;
     bottom: auto;
-    min-height: 28px;
-    padding: 6px 23px;
-    font-size: 14px;
+    min-height: 24px;
+    padding: 6px 20px;
+    font-size: 12px;
   }
 }

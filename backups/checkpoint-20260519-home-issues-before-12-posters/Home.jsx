@@ -4,9 +4,8 @@ import wakeupVideo from '../../wakeup-ffmpeg-1.webm?url';
 import sleepVideo from '../../sleep-ffmpeg-1.webm?url';
 
 const ASSET_PATH = '/assets/';
-const HOME_STEAM_LAB_ENTRY_ENABLED = false;
 
-export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab }) {
+export default function Home({ wakeSignal, onEnterDream }) {
   const videoRef = useRef(null);
   const cushionRef = useRef(null);
   const [phase, setPhase] = useState(wakeSignal > 0 ? 'waking' : 'intro');
@@ -156,12 +155,6 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab }) {
             </button>
           </div>
         </div>
-
-        {showSleep && HOME_STEAM_LAB_ENTRY_ENABLED && (
-          <button className="site-button site-button--ghost" type="button" onClick={onEnterSteamLab}>
-            steam lab
-          </button>
-        )}
 
         {showSleep && (
           <button
