@@ -216,7 +216,7 @@ const SURFACE_WAVE_DEFAULTS = {
 };
 const SURFACE_WAVE_STORAGE_KEY = 'dogdream:corridor-surface-wave-settings:v4';
 const SURFACE_WAVE_PANEL_OPEN_STORAGE_KEY = 'dogdream:corridor-surface-wave-panel-open:v1';
-const SURFACE_WAVE_PANEL_ENTRY_ENABLED = true;
+const SURFACE_WAVE_PANEL_ENTRY_ENABLED = false;
 const SURFACE_WAVE_PANEL_DEFAULT_OPEN = true;
 
 function loadGroundSmokePanelOpen() {
@@ -2297,7 +2297,7 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
   );
 }
 
-export default function DreamCorridor({ initialState, smokePreset, onEnterProject, onWakeUp }) {
+export default function DreamCorridor({ initialState, smokePreset, onConsumeSmokePreset, onEnterProject, onWakeUp }) {
   const initialTargetZ = initialState?.targetZ ?? 0;
   const [targetZ, setTargetZ] = useState(initialTargetZ);
   const [focusedProject, setFocusedProject] = useState(initialState?.focusedProject ?? null);
@@ -2343,8 +2343,16 @@ export default function DreamCorridor({ initialState, smokePreset, onEnterProjec
   }, []);
 
   const resetSmokeSettings = useCallback(() => {
-    setSmokeSettings({ ...GROUND_SMOKE_DEFAULTS });
-  }, []);
+    const next = normalizeGroundSmokeSettings(GROUND_SMOKE_DEFAULTS);
+    setSmokeSettings(next);
+
+    if (typeof window !== 'undefined') {
+      saveGroundSmokeSettings(next);
+      window.dispatchEvent(new CustomEvent('dogdream:corridor-smoke-settings-updated', { detail: next }));
+    }
+
+    onConsumeSmokePreset?.();
+  }, [onConsumeSmokePreset]);
 
   const handleWaveSettingsChange = useCallback((updater) => {
     setWaveSettings((prev) => {
@@ -2354,7 +2362,13 @@ export default function DreamCorridor({ initialState, smokePreset, onEnterProjec
   }, []);
 
   const resetWaveSettings = useCallback(() => {
-    setWaveSettings({ ...SURFACE_WAVE_DEFAULTS });
+    const next = normalizeSurfaceWaveSettings(SURFACE_WAVE_DEFAULTS);
+    setWaveSettings(next);
+
+    if (typeof window !== 'undefined') {
+      saveSurfaceWaveSettings(next);
+      window.dispatchEvent(new CustomEvent('dogdream:corridor-surface-wave-settings-updated', { detail: next }));
+    }
   }, []);
 
   useEffect(() => {
@@ -2367,7 +2381,20 @@ export default function DreamCorridor({ initialState, smokePreset, onEnterProjec
 
   useEffect(() => {
     if (!smokePreset) return;
-    setSmokeSettings(normalizeGroundSmokeSettings(smokePreset));
+    const next = normalizeGroundSmokeSettings(smokePreset);
+    setSmokeSettings(next);
+
+    if (typeof window !== 'undefined') {
+      saveGroundSmokeSettings(next);
+      window.dispatchEvent(new CustomEvent('dogdream:corridor-smoke-settings-updated', { detail: next }));
+    }
+
+    onConsumeSmokePreset?.();
+  }, [onConsumeSmokePreset, smokePreset]);
+
+  useEffect(() => {
+    if (smokePreset) return;
+    setSmokeSettings(loadGroundSmokeSettings());
   }, [smokePreset]);
 
   useEffect(() => {

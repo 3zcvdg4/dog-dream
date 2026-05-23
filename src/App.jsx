@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import Home from './pages/Home.jsx';
-import DreamCorridor from './pages/DreamCorridor.jsx';
-import ProjectDream from './pages/ProjectDream.jsx';
-import SteamLab from './pages/SteamLab.jsx';
 import { projects } from './data/projects.js';
+
+const DreamCorridor = lazy(() => import('./pages/DreamCorridor.jsx'));
+const ProjectDream = lazy(() => import('./pages/ProjectDream.jsx'));
+const SteamLab = lazy(() => import('./pages/SteamLab.jsx'));
 
 const DESKTOP_BREAKPOINT = 1025;
 
@@ -15,6 +16,12 @@ function shouldShowRotateTip() {
   const isLandscape = innerWidth > innerHeight;
 
   return !isDesktop && !isLandscape;
+}
+
+function preloadDreamPages() {
+  void import('./pages/DreamCorridor.jsx');
+  void import('./pages/ProjectDream.jsx');
+  void import('./pages/SteamLab.jsx');
 }
 
 export default function App() {
@@ -45,6 +52,24 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (view !== 'home') return undefined;
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(() => {
+        preloadDreamPages();
+      }, { timeout: 1200 });
+
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      preloadDreamPages();
+    }, 320);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [view]);
+
   function enterProject(projectId, corridorState) {
     setActiveProjectId(projectId);
     setCorridorReturnState(corridorState ?? null);
@@ -53,11 +78,13 @@ export default function App() {
 
   function wakeUp() {
     setWakeSignal((signal) => signal + 1);
+    setCorridorSmokePreset(null);
     setCorridorReturnState(null);
     setView('home');
   }
 
   let content = <Home wakeSignal={wakeSignal} onEnterDream={() => {
+    setCorridorSmokePreset(null);
     setCorridorReturnState(null);
     setView('corridor');
   }} onEnterSteamLab={() => setView('steam-lab')} />;
@@ -67,6 +94,7 @@ export default function App() {
       <DreamCorridor
         initialState={corridorReturnState}
         smokePreset={corridorSmokePreset}
+        onConsumeSmokePreset={() => setCorridorSmokePreset(null)}
         onEnterProject={enterProject}
         onWakeUp={wakeUp}
       />
@@ -85,6 +113,7 @@ export default function App() {
               resumeFromProject: true,
             };
           });
+          setCorridorSmokePreset(null);
           setView('corridor');
         }}
         onWakeUp={wakeUp}
@@ -107,7 +136,9 @@ export default function App() {
 
   return (
     <>
-      {content}
+      <Suspense fallback={<main className="page-shell" aria-busy="true" />}>
+        {content}
+      </Suspense>
 
       {showRotateTip && (
         <div className="rotate-tip-overlay" role="dialog" aria-modal="true" aria-label="横屏浏览提示">
