@@ -6,7 +6,7 @@ import sleepVideo from '../../sleep-ffmpeg-1.webm?url';
 const ASSET_PATH = '/assets/';
 const HOME_STEAM_LAB_ENTRY_ENABLED = false;
 
-export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab }) {
+export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab, sceneCaptureRef }) {
   const videoRef = useRef(null);
   const cushionRef = useRef(null);
   const [phase, setPhase] = useState(wakeSignal > 0 ? 'waking' : 'intro');
@@ -123,8 +123,19 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab }) {
     setVideoSource(sleepVideo);
   }
 
+  function handleEnterDream(event) {
+    const bubbleRect = event.currentTarget.getBoundingClientRect();
+    const anchorX = bubbleRect.left + bubbleRect.width * 0.58;
+    const anchorY = bubbleRect.top + bubbleRect.height * 0.42;
+
+    onEnterDream({
+      x: anchorX,
+      y: anchorY,
+    });
+  }
+
   return (
-    <main className="home page-shell">
+    <main className="home page-shell" ref={sceneCaptureRef}>
       <section
         className="home-card"
         aria-label="Dog dream home scene"
@@ -148,7 +159,7 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab }) {
             <button
               className={`dream-bubble ${showBubble ? 'is-visible' : ''} ${bubbleBroken ? 'is-broken' : ''}`}
               type="button"
-              onClick={onEnterDream}
+              onClick={handleEnterDream}
               disabled={!showBubble}
               aria-label="进入梦境走廊"
             >

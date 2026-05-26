@@ -9,13 +9,13 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@react-three/drei": "latest",
+    "@react-three/fiber": "latest",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "html2canvas": "^1.4.1",
     "react": "latest",
     "react-dom": "latest",
     "three": "latest",
-    "@react-three/fiber": "latest",
-    "@react-three/drei": "latest"
-  },
-  "devDependencies": {}
+    "vite": "latest"
+  }
 }

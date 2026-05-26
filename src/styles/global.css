@@ -29,7 +29,30 @@ button {
 }
 
 .page-shell--locked {
-  background: #fffefc;
+  background: #f7f6f2;
+}
+
+.dream-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dream-transition__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.dream-transition__white {
+  position: absolute;
+  inset: 0;
+  background: #f7f6f2;
+  opacity: 0;
 }
 
 .site-button {
