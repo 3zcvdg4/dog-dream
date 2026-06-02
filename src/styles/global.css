@@ -1329,15 +1329,16 @@ button {
 
 @media (max-width: 1023px) and (min-width: 768px) {
   .corridor {
-    --focus-copy-top: auto;
-    --focus-copy-right: auto;
-    --focus-copy-left: 50%;
-    --focus-copy-bottom: 132px;
-    --focus-copy-width: clamp(356px, 64vw, 468px);
-    --focus-copy-padding: 18px 20px 16px;
-    --focus-copy-radius: 28px;
-    --focus-copy-translate-x: -50%;
-    --focus-copy-translate-y: 0%;
+    --focus-copy-top: 50%;
+    --focus-copy-right: clamp(22px, 5vw, 48px);
+    --focus-copy-left: auto;
+    --focus-copy-bottom: auto;
+    --focus-copy-width: clamp(214px, 29vw, 286px);
+    --focus-copy-min-height: clamp(168px, 22vw, 214px);
+    --focus-copy-padding: 17px 18px 15px;
+    --focus-copy-radius: 24px;
+    --focus-copy-translate-x: 0;
+    --focus-copy-translate-y: -50%;
     --focus-copy-title-size: 24px;
   }
 
@@ -1350,20 +1351,22 @@ button {
 
 @media (max-width: 767px) and (min-width: 600px) {
   .corridor {
-    --focus-copy-top: auto;
-    --focus-copy-right: auto;
-    --focus-copy-left: 50%;
-    --focus-copy-bottom: 112px;
-    --focus-copy-width: clamp(320px, 84vw, 382px);
-    --focus-copy-padding: 16px 18px 14px;
-    --focus-copy-radius: 26px;
-    --focus-copy-translate-x: -50%;
-    --focus-copy-translate-y: 0%;
+    --focus-copy-top: 50%;
+    --focus-copy-right: clamp(14px, 4vw, 28px);
+    --focus-copy-left: auto;
+    --focus-copy-bottom: auto;
+    --focus-copy-width: clamp(184px, 28vw, 218px);
+    --focus-copy-min-height: clamp(154px, 25vw, 196px);
+    --focus-copy-padding: 14px 15px 13px;
+    --focus-copy-radius: 22px;
+    --focus-copy-translate-x: 0;
+    --focus-copy-translate-y: -50%;
     --focus-copy-title-size: 22px;
-    --focus-copy-summary-size: 13px;
+    --focus-copy-summary-size: 12px;
   }
 
   .focus-actions {
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 
@@ -1382,16 +1385,17 @@ button {
 
 @media (max-width: 599px) {
   .corridor {
-    --focus-copy-top: auto;
-    --focus-copy-right: auto;
-    --focus-copy-left: 50%;
-    --focus-copy-bottom: 102px;
-    --focus-copy-width: clamp(292px, 88vw, 340px);
-    --focus-copy-padding: 14px 16px 12px;
-    --focus-copy-radius: 22px;
-    --focus-copy-translate-x: -50%;
-    --focus-copy-translate-y: 0%;
-    --focus-copy-title-size: 20px;
+    --focus-copy-top: 50%;
+    --focus-copy-right: clamp(10px, 3.5vw, 18px);
+    --focus-copy-left: auto;
+    --focus-copy-bottom: auto;
+    --focus-copy-width: clamp(162px, 34vw, 198px);
+    --focus-copy-min-height: clamp(142px, 35vw, 184px);
+    --focus-copy-padding: 12px 12px 11px;
+    --focus-copy-radius: 20px;
+    --focus-copy-translate-x: 0;
+    --focus-copy-translate-y: -50%;
+    --focus-copy-title-size: 18px;
     --focus-copy-summary-size: 12px;
   }
 
@@ -1418,5 +1422,53 @@ button {
     min-height: 28px;
     padding: 6px 23px;
     font-size: 14px;
+  }
+}
+
+/* 聚焦页偏正方形尺寸：画框与卡片保持左右排版，并作为整体垂直居中。 */
+@media (min-width: 1000px) and (max-width: 1120px) and (min-height: 850px) and (max-height: 1010px) {
+  .corridor {
+    --focus-copy-top: 50%;
+    --focus-copy-right: clamp(62px, 7vw, 86px);
+    --focus-copy-left: auto;
+    --focus-copy-bottom: auto;
+    --focus-copy-width: clamp(210px, 21vw, 238px);
+    --focus-copy-min-height: clamp(176px, 19vh, 210px);
+    --focus-copy-padding: 16px 16px 14px;
+    --focus-copy-radius: 23px;
+    --focus-copy-translate-x: calc(-1 * clamp(72px, 7vw, 104px));
+    --focus-copy-translate-y: -50%;
+    --focus-copy-title-size: 22px;
+    --focus-copy-summary-size: 12px;
+  }
+
+  .focus-actions {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+/* 聚焦页偏正方形尺寸：1454×961 / 1460×977 附近只轻微右移，避免贴最右或压画框。 */
+@media (min-width: 1420px) and (max-width: 1490px) and (min-height: 920px) and (max-height: 1010px) {
+  .corridor {
+    --focus-copy-top: 50%;
+    --focus-copy-right: clamp(92px, 7vw, 128px);
+    --focus-copy-left: auto;
+    --focus-copy-bottom: auto;
+    --focus-copy-width: clamp(246px, 17vw, 286px);
+    --focus-copy-min-height: clamp(188px, 19vh, 220px);
+    --focus-copy-padding: 18px 17px 15px;
+    --focus-copy-translate-x: calc(-1 * clamp(110px, 8vw, 150px));
+    --focus-copy-translate-y: -50%;
+    --focus-copy-title-size: 24px;
+    --focus-copy-summary-size: 13px;
+  }
+}
+
+/* 聚焦页偏方区间：1442×1192 到 1530×963/964 附近，统一过渡距离，避免 1px 高度产生跳变。 */
+@media (min-width: 1442px) and (max-width: 1530px) and (min-height: 920px) and (max-height: 1192px) {
+  .corridor {
+    --focus-copy-right: clamp(104px, 7.4vw, 136px);
+    --focus-copy-translate-x: calc(-1 * clamp(150px, 11vw, 188px));
   }
 }

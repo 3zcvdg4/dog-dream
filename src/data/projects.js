@@ -6,7 +6,7 @@ export const projects = [
     role: 'Brand Designer',
     services: 'Visual Identity / Art Direction / Layout System',
     color: '#f3b8b7',
-    imageUrl: '/assets/01框.jpg',
+    imageUrl: '/poster/11.jpg',
     summary: '这里是第一个项目简介。后续可以替换成真实品牌项目的概念、目标、视觉方向和你的工作内容。',
     detail: '三级页面用于展开单个项目：可以放主视觉、品牌系统、过程图、延展物料、项目说明和你的角色。',
   },

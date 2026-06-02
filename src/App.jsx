@@ -14,13 +14,19 @@ const DREAM_TRANSITION_WHITE_HOLD_DELAY_MS = 2760;
 const DREAM_TRANSITION_SWITCH_DELAY_MS = 2920;
 const DREAM_TRANSITION_REVEAL_DELAY_MS = 3040;
 const DREAM_TRANSITION_FINISH_DELAY_MS = 5050;
+const CORRIDOR_RETURN_WHITE_HOLD_DELAY_MS = 320;
+const CORRIDOR_RETURN_SWITCH_DELAY_MS = 400;
+const CORRIDOR_RETURN_REVEAL_DELAY_MS = 820;
+const CORRIDOR_RETURN_FINISH_DELAY_MS = 1820;
+const CORRIDOR_RETURN_WHITE_FILL_START_MS = 36;
+const CORRIDOR_RETURN_WHITE_FILL_DURATION_MS = 380;
 const DREAM_CORRIDOR_TEXTURES = [
   '/assets/corridor-ceiling.png',
   '/assets/corridor-floor.png',
   '/assets/corridor-left-wall.png',
   '/assets/corridor-right-wall.png',
 ];
-const DREAM_CORRIDOR_POSTERS = projects.slice(0, 4).map((project) => project.imageUrl).filter(Boolean);
+const DREAM_CORRIDOR_POSTERS = projects.map((project) => project.imageUrl).filter(Boolean);
 
 const preloadedDreamImages = new Set();
 
@@ -44,7 +50,9 @@ function shouldShowRotateTip() {
 }
 
 function preloadDreamPages() {
-  void import('./pages/DreamCorridor.jsx');
+  void import('./pages/DreamCorridor.jsx').then((module) => {
+    module.preloadCorridorTextures?.();
+  });
   void import('./pages/ProjectDream.jsx');
   void import('./pages/SteamLab.jsx');
 }
@@ -61,6 +69,10 @@ function createIdleDreamTransitionState() {
     y: 0,
     key: 0,
     snapshotCanvas: null,
+    mode: 'ripple',
+    revealDurationMs: null,
+    whiteFillStartMs: null,
+    whiteFillDurationMs: null,
   };
 }
 
@@ -290,7 +302,14 @@ export default function App() {
     preloadDreamPages();
     preloadDreamAssets();
 
-    const snapshotCanvas = await captureTransitionSnapshot(homeSceneCaptureRef.current);
+    let snapshotCanvas = null;
+
+    try {
+      snapshotCanvas = await captureTransitionSnapshot(homeSceneCaptureRef.current);
+    } catch (error) {
+      console.warn('[dogdream] Dream transition snapshot failed.', error);
+      return;
+    }
 
     setDreamTransition((current) => {
       if (current.phase !== 'idle') return current;
@@ -331,6 +350,70 @@ export default function App() {
         y,
         key: current.key + 1,
         snapshotCanvas,
+        mode: 'ripple',
+        revealDurationMs: DREAM_TRANSITION_FINISH_DELAY_MS - DREAM_TRANSITION_REVEAL_DELAY_MS,
+        whiteFillStartMs: undefined,
+        whiteFillDurationMs: undefined,
+      };
+    });
+  }
+
+  async function startCorridorReturnTransition() {
+    if (dreamTransition.phase !== 'idle') return;
+
+    clearDreamTransitionTimers();
+    preloadDreamPages();
+    preloadDreamAssets();
+
+    setDreamTransition((current) => {
+      if (current.phase !== 'idle') return current;
+
+      dreamTransitionTimersRef.current = [
+        window.setTimeout(() => {
+          setCorridorReturnState((state) => {
+            if (!state) return state;
+            return {
+              ...state,
+              resumeFromProject: true,
+            };
+          });
+          setCorridorSmokePreset(null);
+          setView('corridor');
+        }, CORRIDOR_RETURN_SWITCH_DELAY_MS),
+        window.setTimeout(() => {
+          setDreamTransition((transition) => {
+            if (transition.phase === 'idle') return transition;
+            return {
+              ...transition,
+              phase: 'white-hold',
+            };
+          });
+        }, CORRIDOR_RETURN_WHITE_HOLD_DELAY_MS),
+        window.setTimeout(() => {
+          setDreamTransition((transition) => {
+            if (transition.phase === 'idle') return transition;
+            return {
+              ...transition,
+              phase: 'revealing',
+            };
+          });
+        }, CORRIDOR_RETURN_REVEAL_DELAY_MS),
+        window.setTimeout(() => {
+          setDreamTransition(createIdleDreamTransitionState());
+          clearDreamTransitionTimers();
+        }, CORRIDOR_RETURN_FINISH_DELAY_MS),
+      ];
+
+      return {
+        phase: 'rippling',
+        x: (window.innerWidth || 1) * 0.5,
+        y: (window.innerHeight || 1) * 0.5,
+        key: current.key + 1,
+        snapshotCanvas: null,
+        mode: 'white-fade',
+        revealDurationMs: CORRIDOR_RETURN_FINISH_DELAY_MS - CORRIDOR_RETURN_REVEAL_DELAY_MS,
+        whiteFillStartMs: CORRIDOR_RETURN_WHITE_FILL_START_MS,
+        whiteFillDurationMs: CORRIDOR_RETURN_WHITE_FILL_DURATION_MS,
       };
     });
   }
@@ -375,17 +458,7 @@ export default function App() {
     content = (
       <ProjectDream
         project={activeProject}
-        onBackToCorridor={() => {
-          setCorridorReturnState((current) => {
-            if (!current) return current;
-            return {
-              ...current,
-              resumeFromProject: true,
-            };
-          });
-          setCorridorSmokePreset(null);
-          setView('corridor');
-        }}
+        onBackToCorridor={startCorridorReturnTransition}
         onWakeUp={wakeUp}
       />
     );
@@ -410,13 +483,16 @@ export default function App() {
         {content}
       </Suspense>
 
-      {dreamTransition.phase !== 'idle' && dreamTransition.snapshotCanvas && (
+      {dreamTransition.phase !== 'idle' && (
         <DreamTransitionOverlay
+          mode={dreamTransition.mode ?? 'ripple'}
           phase={dreamTransition.phase}
           transitionKey={dreamTransition.key}
           snapshotCanvas={dreamTransition.snapshotCanvas}
           origin={{ x: dreamTransition.x, y: dreamTransition.y }}
-          revealDurationMs={DREAM_TRANSITION_FINISH_DELAY_MS - DREAM_TRANSITION_REVEAL_DELAY_MS}
+          revealDurationMs={dreamTransition.revealDurationMs ?? (DREAM_TRANSITION_FINISH_DELAY_MS - DREAM_TRANSITION_REVEAL_DELAY_MS)}
+          whiteFillStartMs={dreamTransition.whiteFillStartMs ?? undefined}
+          whiteFillDurationMs={dreamTransition.whiteFillDurationMs ?? undefined}
         />
       )}
 

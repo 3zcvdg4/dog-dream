@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 const RIPPLE_SPREAD_DURATION_MS = 5080;
-const WHITE_FILL_START_MS = 120;
-const WHITE_FILL_DURATION_MS = 2550;
+const DEFAULT_WHITE_FILL_START_MS = 120;
+const DEFAULT_WHITE_FILL_DURATION_MS = 2550;
 const RIPPLE_TILE_SIZE = 6;
 const RIPPLE_LAYERS = [
   {
@@ -59,9 +59,9 @@ function easeInCubic(value) {
   return value ** 3;
 }
 
-function computeWhiteOpacity(elapsedMs) {
+function computeWhiteOpacity(elapsedMs, whiteFillStartMs, whiteFillDurationMs) {
   const fillProgress = clamp(
-    (elapsedMs - WHITE_FILL_START_MS) / WHITE_FILL_DURATION_MS,
+    (elapsedMs - whiteFillStartMs) / whiteFillDurationMs,
     0,
     1,
   );
@@ -209,11 +209,14 @@ function drawRippleFrame(ctx, sourceCanvas, metrics) {
 }
 
 export default function DreamTransitionOverlay({
+  mode = 'ripple',
   phase,
   transitionKey,
   snapshotCanvas,
   origin,
   revealDurationMs = 560,
+  whiteFillStartMs = DEFAULT_WHITE_FILL_START_MS,
+  whiteFillDurationMs = DEFAULT_WHITE_FILL_DURATION_MS,
 }) {
   const canvasRef = useRef(null);
   const whiteLayerRef = useRef(null);
@@ -236,7 +239,48 @@ export default function DreamTransitionOverlay({
   useEffect(() => {
     const canvas = canvasRef.current;
     const whiteLayer = whiteLayerRef.current;
-    if (!canvas || !whiteLayer || !snapshotCanvas) return undefined;
+    if (!canvas || !whiteLayer) return undefined;
+
+    if (mode === 'white-fade') {
+      canvas.style.opacity = '0';
+      canvas.width = Math.max(window.innerWidth, 1);
+      canvas.height = Math.max(window.innerHeight, 1);
+      startedAtRef.current = performance.now();
+      revealStartedAtRef.current = null;
+
+      function renderWhiteFadeFrame(now) {
+        const currentPhase = latestPhaseRef.current;
+        const rawElapsedMs = now - startedAtRef.current;
+
+        if (currentPhase === 'revealing') {
+          if (revealStartedAtRef.current === null) {
+            revealStartedAtRef.current = now;
+          }
+
+          const revealProgress = clamp(
+            (now - revealStartedAtRef.current) / revealDurationMs,
+            0,
+            1,
+          );
+
+          whiteLayer.style.opacity = `${1 - easeInCubic(revealProgress)}`;
+        } else if (currentPhase === 'white-hold') {
+          whiteLayer.style.opacity = '1';
+        } else {
+          whiteLayer.style.opacity = `${computeWhiteOpacity(rawElapsedMs, whiteFillStartMs, whiteFillDurationMs)}`;
+        }
+
+        animationFrameRef.current = window.requestAnimationFrame(renderWhiteFadeFrame);
+      }
+
+      animationFrameRef.current = window.requestAnimationFrame(renderWhiteFadeFrame);
+
+      return () => {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      };
+    }
+
+    if (!snapshotCanvas) return undefined;
 
     const context = canvas.getContext('2d', { alpha: true });
     if (!context) return undefined;
@@ -279,7 +323,7 @@ export default function DreamTransitionOverlay({
         whiteLayer.style.opacity = '1';
       } else {
         canvas.style.opacity = '1';
-        whiteLayer.style.opacity = `${computeWhiteOpacity(elapsedMs)}`;
+        whiteLayer.style.opacity = `${computeWhiteOpacity(elapsedMs, whiteFillStartMs, whiteFillDurationMs)}`;
         drawRippleFrame(context, snapshotCanvas, {
           originX,
           originY,
@@ -295,7 +339,7 @@ export default function DreamTransitionOverlay({
     return () => {
       window.cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [origin.x, origin.y, revealDurationMs, snapshotCanvas, transitionKey]);
+  }, [mode, origin.x, origin.y, revealDurationMs, snapshotCanvas, transitionKey, whiteFillDurationMs, whiteFillStartMs]);
 
   return (
     <div className={`dream-transition dream-transition--${phase}`} aria-hidden="true">

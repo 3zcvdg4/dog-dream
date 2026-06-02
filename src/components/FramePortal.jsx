@@ -57,7 +57,7 @@ const FRAME_GLASS_ATTENUATION_COLOR = '#e9f7ff';
 // 透射衰减距离：越小厚边颜色越明显；这里做很轻的浅蓝晶体感。
 const FRAME_GLASS_ATTENUATION_DISTANCE = 1.6;
 // 轻微珠光强度：只加一点点，避免过度彩虹化。
-const FRAME_GLASS_IRIDESCENCE = 0.08;
+const FRAME_GLASS_IRIDESCENCE = 0.18;
 // 珠光折射率：维持很弱的琉璃彩边。
 const FRAME_GLASS_IRIDESCENCE_IOR = 1.18;
 // 珠光厚度范围：控制微弱彩边出现在哪个厚度区间。
@@ -130,7 +130,7 @@ const POSTER_INNER_SHADOW_EDGE_SOFTNESS = 0.16;
 const POSTER_INNER_SHADOW_Z_OFFSET = 0.05;
 
 // 琉璃透光高光颜色：轻微偏蓝白，用来模拟玻璃边缘折进海报表面的柔光。
-const POSTER_GLASS_HIGHLIGHT_COLOR = '#94e5f3';
+const POSTER_GLASS_HIGHLIGHT_COLOR = 'rgb(253, 240, 255)';
 // 琉璃透光高光总透明度：这是玻璃感最主要的可调阀门；太高会假，太低会看不见。
 const POSTER_GLASS_HIGHLIGHT_OPACITY = 0.05;
 // 高光主带离靠光边缘的距离：越小越贴边，越大越往海报中间滑。
@@ -140,7 +140,7 @@ const POSTER_GLASS_HIGHLIGHT_WIDTH = 0.001;
 // 高光主带软过渡：越大越柔，越小越利。
 const POSTER_GLASS_HIGHLIGHT_SOFTNESS = 0.3;
 // 顶部高光加权：让高光略微偏上，更像现实里从上方/侧前方擦过去的光。
-const POSTER_GLASS_HIGHLIGHT_TOP_WEIGHT = 0.32;
+const POSTER_GLASS_HIGHLIGHT_TOP_WEIGHT = 0.56;
 // 高光层离海报表面的前后偏移：略高于阴影层，避免透明面互相抢深度。
 const POSTER_GLASS_HIGHLIGHT_Z_OFFSET = 0.004;
 
@@ -382,7 +382,7 @@ function areFramePropsEqual(previousProps, nextProps) {
     && previousProject.rotation[2] === nextProject.rotation[2];
 }
 
-function FramePortal({ project, isFocused, onFocusProject }) {
+function FramePortal({ project, isFocused, onFocusProject, onEnterProject }) {
   const groupRef = useRef(null);
   const texture = project.imageUrl ? useTexture(project.imageUrl) : null;
   const frameWidth = project.frameWidth ?? 1.34;
@@ -517,6 +517,17 @@ function FramePortal({ project, isFocused, onFocusProject }) {
     onFocusProject(project);
   }, [onFocusProject, project]);
 
+  const handlePosterClick = useCallback((event) => {
+    event.stopPropagation();
+
+    if (isFocused && onEnterProject) {
+      onEnterProject(project);
+      return;
+    }
+
+    onFocusProject(project);
+  }, [isFocused, onEnterProject, onFocusProject, project]);
+
   useFrame((state) => {
     if (!groupRef.current) return;
     const baseY = project.position[1];
@@ -542,6 +553,7 @@ function FramePortal({ project, isFocused, onFocusProject }) {
         position={[0, 0, imageZ]}
         geometry={imageGeometry}
         material={texture ? imageMaterial : OPAQUE_IMAGE_FALLBACK}
+        onClick={handlePosterClick}
         receiveShadow // 让海报面接住边框或灯打出来的阴影变化
       >
       </mesh>
@@ -552,6 +564,7 @@ function FramePortal({ project, isFocused, onFocusProject }) {
             scale={[lightFacingScaleX, 1, 1]}
             geometry={imageGeometry}
             material={posterInnerShadowMaterial}
+            onClick={handlePosterClick}
             renderOrder={1}
           />
           <mesh
@@ -559,6 +572,7 @@ function FramePortal({ project, isFocused, onFocusProject }) {
             scale={[lightFacingScaleX, 1, 1]}
             geometry={imageGeometry}
             material={posterGlassHighlightMaterial}
+            onClick={handlePosterClick}
             renderOrder={2}
           />
         </>

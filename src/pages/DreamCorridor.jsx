@@ -1,6 +1,6 @@
 import { useTexture } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import FramePortal from '../components/FramePortal.jsx';
 import SteamField from '../components/SteamField.jsx';
@@ -151,6 +151,20 @@ const CEILING_TEXTURE_URL = '/assets/corridor-ceiling.png';
 const FLOOR_TEXTURE_URL = '/assets/corridor-floor.png';
 const LEFT_WALL_TEXTURE_URL = '/assets/corridor-left-wall.png';
 const RIGHT_WALL_TEXTURE_URL = '/assets/corridor-right-wall.png';
+const CORRIDOR_TEXTURE_URLS = [
+  CEILING_TEXTURE_URL,
+  FLOOR_TEXTURE_URL,
+  LEFT_WALL_TEXTURE_URL,
+  RIGHT_WALL_TEXTURE_URL,
+];
+const CORRIDOR_POSTER_URLS = projects.map((project) => project.imageUrl).filter(Boolean);
+
+export function preloadCorridorTextures() {
+  useTexture.preload([...CORRIDOR_TEXTURE_URLS, ...CORRIDOR_POSTER_URLS]);
+}
+
+preloadCorridorTextures();
+
 const CORRIDOR_RENDER_LENGTH = CORRIDOR_SEGMENT_LENGTH * 8;
 const FOCUSED_CAMERA_WALL_DISTANCE = 3.4;
 const CORRIDOR_DPR_CAP = 1.25;
@@ -480,6 +494,159 @@ const FRAME_TRANSPARENCY_BACK_RIM_OFFSET_Z = 2.4;
 const FRAME_TRANSPARENCY_BACK_RIM_TARGET_OFFSET_X = 0.04;
 const FRAME_TRANSPARENCY_BACK_RIM_TARGET_OFFSET_Y = 0.02;
 const FRAME_TRANSPARENCY_BACK_RIM_TARGET_OFFSET_Z = -0.6;
+// ------------------------------
+// 聚焦页主灯参数（点击画框进入聚焦页后启用）
+// 下面这组是专门给你手调的；这次会做“主灯 + 冷色侧高光 + 顶部补光 + 背轮廓光”。
+// 左右两侧共用大部分参数，只有 X 方向偏移与目标落点会镜像。
+// ------------------------------
+
+// 聚焦主灯颜色：偏暖白。想更冷一点就往纯白/蓝白调，想更柔和就保留暖白。
+const FOCUSED_FRAME_LIGHT_COLOR = '#fff7eb';
+// 聚焦主灯亮度：这是最主要的亮度总阀门；越大越亮。
+const FOCUSED_FRAME_LIGHT_INTENSITY = 120;
+// 聚焦主灯光束宽度：越大铺得越开，越小越像一束很窄的聚光。
+const FOCUSED_FRAME_LIGHT_ANGLE = 0.25;
+// 聚焦主灯边缘柔和度：越大边缘越软，越像被雾化过的展厅灯。
+const FOCUSED_FRAME_LIGHT_PENUMBRA = 0.92;
+// 聚焦主灯衰减速度：越大离灯远的地方暗得越快。
+const FOCUSED_FRAME_LIGHT_DECAY = 1.08;
+// 聚焦主灯射程：越大照得越远，但也更容易把范围打散。
+const FOCUSED_FRAME_LIGHT_DISTANCE = 16;
+
+// 左侧聚焦主灯本体左右位置：正值表示从走廊内侧往左墙画框打过去。
+const FOCUSED_LEFT_FRAME_LIGHT_OFFSET_X = 1.7;
+// 右侧聚焦主灯本体左右位置：负值表示从走廊内侧往右墙画框打过去。
+const FOCUSED_RIGHT_FRAME_LIGHT_OFFSET_X = -1.7;
+// 聚焦主灯高度：越大越高；高一点更像从上方向下斜打。
+const FOCUSED_FRAME_LIGHT_OFFSET_Y = 0.42;
+// 聚焦主灯前后位置：越负越靠镜头这一侧；绝对值过大容易打空。
+const FOCUSED_FRAME_LIGHT_OFFSET_Z = -3.4;
+
+// 左侧聚焦主灯目标左右落点：控制光最后落在左框更偏中间还是更偏内缘。
+const FOCUSED_LEFT_FRAME_LIGHT_TARGET_OFFSET_X = -0.02;
+// 右侧聚焦主灯目标左右落点：与左侧镜像。
+const FOCUSED_RIGHT_FRAME_LIGHT_TARGET_OFFSET_X = 0.02;
+// 聚焦主灯目标高度：往上调更容易扫到画框上沿和海报上半部。
+const FOCUSED_FRAME_LIGHT_TARGET_OFFSET_Y = 0.02;
+// 聚焦主灯目标前后位置：控制光束扎进画框的深浅；太前会飘，太后会钻墙。
+const FOCUSED_FRAME_LIGHT_TARGET_OFFSET_Z = 0.05;
+
+// 阴影贴图宽度：越大阴影越细，但性能开销也越高。
+const FOCUSED_FRAME_LIGHT_SHADOW_MAP_WIDTH = 0;
+// 阴影贴图高度：通常和宽度一起调。
+const FOCUSED_FRAME_LIGHT_SHADOW_MAP_HEIGHT = 1024;
+// 阴影偏移：压一下阴影悬空/漏光问题；绝对值太大容易穿帮。
+const FOCUSED_FRAME_LIGHT_SHADOW_BIAS = 0.00012;
+// 法线偏移：减少阴影痘痘；太大阴影会像飘起来。
+const FOCUSED_FRAME_LIGHT_SHADOW_NORMAL_BIAS = 0.02;
+// 阴影视锥近裁切：太小可能浪费精度。
+const FOCUSED_FRAME_LIGHT_SHADOW_NEAR = 0.5;
+// 阴影视锥远裁切：尽量只包住聚焦画框附近，阴影会更稳。
+const FOCUSED_FRAME_LIGHT_SHADOW_FAR = 18;
+
+// ------------------------------
+// 聚焦页侧高光灯参数（只在聚焦页启用）
+// 这盏灯专门负责把相框边缘切出“冷色高光”，让玻璃边不再发平。
+// ------------------------------
+
+// 侧高光颜色：偏蓝白；这是你想要的“冷色反光感”主要来源。
+const FOCUSED_FRAME_RIM_LIGHT_COLOR = '#ffffff';
+// 侧高光亮度：越大边缘亮斑越明显，但太大会像打白漆。
+const FOCUSED_FRAME_RIM_LIGHT_INTENSITY = 80;
+// 侧高光光束宽度：稍微收一点，让它更像擦着边框过去的亮线。
+const FOCUSED_FRAME_RIM_LIGHT_ANGLE = 0.54;
+// 侧高光边缘柔和度：高一点更像展厅里柔和扫过去的反光。
+const FOCUSED_FRAME_RIM_LIGHT_PENUMBRA = 0.96;
+// 侧高光衰减速度：略快一点，避免把整面墙一起照亮。
+const FOCUSED_FRAME_RIM_LIGHT_DECAY = 1.5;
+// 侧高光射程：只需要包住聚焦画框附近。
+const FOCUSED_FRAME_RIM_LIGHT_DISTANCE = 14;
+// 左侧侧高光灯本体左右位置：从走廊内侧斜擦左墙画框的玻璃边。
+const FOCUSED_LEFT_FRAME_RIM_LIGHT_OFFSET_X = 4;
+// 右侧侧高光灯本体左右位置：与左侧镜像。
+const FOCUSED_RIGHT_FRAME_RIM_LIGHT_OFFSET_X = -4;
+// 侧高光灯高度：略高于画框中心，比较容易扫出上半段亮边。
+const FOCUSED_FRAME_RIM_LIGHT_OFFSET_Y = 0.68;
+// 侧高光灯前后位置：比主灯更贴近画框，形成擦边高光。
+const FOCUSED_FRAME_RIM_LIGHT_OFFSET_Z = -1.48;
+// 左侧侧高光目标左右落点：压进框面一点，避免只打到墙。
+const FOCUSED_LEFT_FRAME_RIM_LIGHT_TARGET_OFFSET_X = 0.22;
+// 右侧侧高光目标左右落点：与左侧镜像。
+const FOCUSED_RIGHT_FRAME_RIM_LIGHT_TARGET_OFFSET_X = -0.22;
+// 侧高光目标高度：略高一点，更容易切到海报上沿玻璃感。
+const FOCUSED_FRAME_RIM_LIGHT_TARGET_OFFSET_Y = 0.08;
+// 侧高光目标前后位置：让高光扎进框里，不要飘在前面。
+const FOCUSED_FRAME_RIM_LIGHT_TARGET_OFFSET_Z = 0.16;
+
+// ------------------------------
+// 聚焦页顶部补光灯参数（只在聚焦页启用）
+// 这盏灯负责把上沿和框面托起来，避免只有一侧亮、其余全塌掉。
+// ------------------------------
+
+// 顶补光颜色：偏冷白，负责把玻璃面提亮，但不抢主灯暖色关系。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_COLOR = '#ff0000';
+// 顶补光亮度：只做托亮，不做主照明。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_INTENSITY = 200;
+// 顶补光光束宽度：稍宽一点，让它能照顾整张框的上沿。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_ANGLE = 0.5;
+// 顶补光边缘柔和度：保持很柔，避免在海报上留下生硬光圈。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_PENUMBRA = 1;
+// 顶补光衰减速度：正常即可，主要只包住当前聚焦区域。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_DECAY = 1.08;
+// 顶补光射程：比主灯略大一点，方便整圈框体都能吃到一点光。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_DISTANCE = 18;
+// 顶补光左右位置：居中即可，不做左右偏置。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_OFFSET_X = 0.0;
+// 顶补光高度：明显高于画框，形成从上往下托亮的感觉。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_OFFSET_Y = 2.08;
+// 顶补光前后位置：稍微在镜头这一侧，避免打空。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_OFFSET_Z = -1.54;
+// 顶补光目标左右落点：保持居中。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_TARGET_OFFSET_X = 0;
+// 顶补光目标高度：瞄到框体中上段。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_TARGET_OFFSET_Y = 0.16;
+// 顶补光目标前后位置：轻轻压进框体。
+const FOCUSED_FRAME_TOP_FILL_LIGHT_TARGET_OFFSET_Z = 0.14;
+
+// ------------------------------
+// 聚焦页背轮廓灯参数（只在聚焦页启用）
+// 这盏灯只负责把相框边缘从背景里“剥出来”，不负责照亮海报主体。
+// ------------------------------
+
+// 背轮廓光颜色：接近白色，避免背边出现太明显的偏色。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_COLOR = '#ffffff';
+// 背轮廓光亮度：保持轻，不然会像背后开了探照灯。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_INTENSITY = 4.6;
+// 背轮廓光光束宽度：较窄，主要切外轮廓。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_ANGLE = 0.4;
+// 背轮廓光边缘柔和度：柔一点，轮廓才会自然。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_PENUMBRA = 0.98;
+// 背轮廓光衰减速度：略快，避免照到大面积背景。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_DECAY = 1.1;
+// 背轮廓光射程：只要覆盖框体附近即可。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_DISTANCE = 18;
+// 左侧背轮廓灯左右位置：放到框体背后反侧，切轮廓边。
+const FOCUSED_LEFT_FRAME_BACK_RIM_LIGHT_OFFSET_X = -0.94;
+// 右侧背轮廓灯左右位置：与左侧镜像。
+const FOCUSED_RIGHT_FRAME_BACK_RIM_LIGHT_OFFSET_X = 0.94;
+// 背轮廓灯高度：略高于画框中心，更容易剥出上半圈轮廓。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_OFFSET_Y = 1.02;
+// 背轮廓灯前后位置：放到画框更后方，让它像背轮廓光。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_OFFSET_Z = 2.18;
+// 左侧背轮廓目标左右落点：轻轻压回框体中心。
+const FOCUSED_LEFT_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_X = 0.04;
+// 右侧背轮廓目标左右落点：与左侧镜像。
+const FOCUSED_RIGHT_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_X = -0.04;
+// 背轮廓目标高度：保持接近中心略上。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_Y = 0.04;
+// 背轮廓目标前后位置：压向框体背面。
+const FOCUSED_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_Z = -0.48;
+
+const FOCUSED_SURFACE_WAVE_OPACITY_MULTIPLIER = 0.42;
+const FOCUSED_SURFACE_WAVE_INTENSITY_MULTIPLIER = 0.55;
+const FOCUSED_SURFACE_WAVE_WALL_BOOST_MULTIPLIER = 0.58;
+const FOCUSED_SURFACE_WAVE_FLOOR_BOOST_MULTIPLIER = 0.74;
+const FOCUSED_SURFACE_WAVE_CEILING_BOOST_MULTIPLIER = 0.82;
 const WALL_ALIGNMENT_DEBUG = {
   enabled: false,
   disableScreenOverlay: true,
@@ -2002,6 +2169,174 @@ function RightFillSlotLight({ viewportWidth }) {
   return <SlotFrameLight viewportWidth={viewportWidth} side="right" variant="fill" />;
 }
 
+function FocusedProjectLight({ project, config }) {
+  const lightRef = useRef(null);
+  const targetRef = useRef(null);
+
+  useEffect(() => {
+    if (!lightRef.current || !targetRef.current) return;
+    lightRef.current.target = targetRef.current;
+    lightRef.current.target.updateMatrixWorld();
+  }, []);
+
+  useFrame(() => {
+    if (!project || !lightRef.current || !targetRef.current) return;
+
+    const [frameX, frameY, frameZ] = project.position;
+
+    lightRef.current.position.set(
+      frameX + config.offsetX,
+      frameY + config.offsetY,
+      frameZ + config.offsetZ,
+    );
+    targetRef.current.position.set(
+      frameX + config.targetOffsetX,
+      frameY + config.targetOffsetY,
+      frameZ + config.targetOffsetZ,
+    );
+    lightRef.current.target.updateMatrixWorld();
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  return (
+    <>
+      <spotLight
+        ref={lightRef}
+        castShadow={config.castShadow}
+        color={config.color}
+        intensity={config.intensity}
+        angle={config.angle}
+        penumbra={config.penumbra}
+        decay={config.decay}
+        distance={config.distance}
+        shadow-mapSize-width={config.shadowMapWidth ?? 1024}
+        shadow-mapSize-height={config.shadowMapHeight ?? 1024}
+        shadow-bias={config.shadowBias ?? -0.00012}
+        shadow-normalBias={config.shadowNormalBias ?? 0.02}
+        shadow-camera-near={config.shadowNear ?? 0.5}
+        shadow-camera-far={config.shadowFar ?? 18}
+      />
+      <object3D ref={targetRef} />
+    </>
+  );
+}
+
+function FocusedFrameLight({ project }) {
+  const side = project?.side ?? 1;
+  const isLeftSlot = side < 0;
+  const keyLightConfig = useMemo(() => {
+    if (isLeftSlot) {
+      return {
+        color: FOCUSED_FRAME_LIGHT_COLOR,
+        intensity: FOCUSED_FRAME_LIGHT_INTENSITY,
+        angle: FOCUSED_FRAME_LIGHT_ANGLE,
+        distance: FOCUSED_FRAME_LIGHT_DISTANCE,
+        offsetX: FOCUSED_LEFT_FRAME_LIGHT_OFFSET_X,
+        offsetY: FOCUSED_FRAME_LIGHT_OFFSET_Y,
+        offsetZ: FOCUSED_FRAME_LIGHT_OFFSET_Z,
+        targetOffsetX: FOCUSED_LEFT_FRAME_LIGHT_TARGET_OFFSET_X,
+        targetOffsetY: FOCUSED_FRAME_LIGHT_TARGET_OFFSET_Y,
+        targetOffsetZ: FOCUSED_FRAME_LIGHT_TARGET_OFFSET_Z,
+        penumbra: FOCUSED_FRAME_LIGHT_PENUMBRA,
+        decay: FOCUSED_FRAME_LIGHT_DECAY,
+        castShadow: true,
+        shadowMapWidth: FOCUSED_FRAME_LIGHT_SHADOW_MAP_WIDTH,
+        shadowMapHeight: FOCUSED_FRAME_LIGHT_SHADOW_MAP_HEIGHT,
+        shadowBias: FOCUSED_FRAME_LIGHT_SHADOW_BIAS,
+        shadowNormalBias: FOCUSED_FRAME_LIGHT_SHADOW_NORMAL_BIAS,
+        shadowNear: FOCUSED_FRAME_LIGHT_SHADOW_NEAR,
+        shadowFar: FOCUSED_FRAME_LIGHT_SHADOW_FAR,
+      };
+    }
+
+    return {
+      color: FOCUSED_FRAME_LIGHT_COLOR,
+      intensity: FOCUSED_FRAME_LIGHT_INTENSITY,
+      angle: FOCUSED_FRAME_LIGHT_ANGLE,
+      distance: FOCUSED_FRAME_LIGHT_DISTANCE,
+      offsetX: FOCUSED_RIGHT_FRAME_LIGHT_OFFSET_X,
+      offsetY: FOCUSED_FRAME_LIGHT_OFFSET_Y,
+      offsetZ: FOCUSED_FRAME_LIGHT_OFFSET_Z,
+      targetOffsetX: FOCUSED_RIGHT_FRAME_LIGHT_TARGET_OFFSET_X,
+      targetOffsetY: FOCUSED_FRAME_LIGHT_TARGET_OFFSET_Y,
+      targetOffsetZ: FOCUSED_FRAME_LIGHT_TARGET_OFFSET_Z,
+      penumbra: FOCUSED_FRAME_LIGHT_PENUMBRA,
+      decay: FOCUSED_FRAME_LIGHT_DECAY,
+      castShadow: true,
+      shadowMapWidth: FOCUSED_FRAME_LIGHT_SHADOW_MAP_WIDTH,
+      shadowMapHeight: FOCUSED_FRAME_LIGHT_SHADOW_MAP_HEIGHT,
+      shadowBias: FOCUSED_FRAME_LIGHT_SHADOW_BIAS,
+      shadowNormalBias: FOCUSED_FRAME_LIGHT_SHADOW_NORMAL_BIAS,
+      shadowNear: FOCUSED_FRAME_LIGHT_SHADOW_NEAR,
+      shadowFar: FOCUSED_FRAME_LIGHT_SHADOW_FAR,
+    };
+  }, [isLeftSlot]);
+
+  const rimLightConfig = useMemo(() => ({
+    color: FOCUSED_FRAME_RIM_LIGHT_COLOR,
+    intensity: FOCUSED_FRAME_RIM_LIGHT_INTENSITY,
+    angle: FOCUSED_FRAME_RIM_LIGHT_ANGLE,
+    distance: FOCUSED_FRAME_RIM_LIGHT_DISTANCE,
+    offsetX: isLeftSlot ? FOCUSED_LEFT_FRAME_RIM_LIGHT_OFFSET_X : FOCUSED_RIGHT_FRAME_RIM_LIGHT_OFFSET_X,
+    offsetY: FOCUSED_FRAME_RIM_LIGHT_OFFSET_Y,
+    offsetZ: FOCUSED_FRAME_RIM_LIGHT_OFFSET_Z,
+    targetOffsetX: isLeftSlot ? FOCUSED_LEFT_FRAME_RIM_LIGHT_TARGET_OFFSET_X : FOCUSED_RIGHT_FRAME_RIM_LIGHT_TARGET_OFFSET_X,
+    targetOffsetY: FOCUSED_FRAME_RIM_LIGHT_TARGET_OFFSET_Y,
+    targetOffsetZ: FOCUSED_FRAME_RIM_LIGHT_TARGET_OFFSET_Z,
+    penumbra: FOCUSED_FRAME_RIM_LIGHT_PENUMBRA,
+    decay: FOCUSED_FRAME_RIM_LIGHT_DECAY,
+    castShadow: false,
+  }), [isLeftSlot]);
+
+  const topFillLightConfig = useMemo(() => ({
+    color: FOCUSED_FRAME_TOP_FILL_LIGHT_COLOR,
+    intensity: FOCUSED_FRAME_TOP_FILL_LIGHT_INTENSITY,
+    angle: FOCUSED_FRAME_TOP_FILL_LIGHT_ANGLE,
+    distance: FOCUSED_FRAME_TOP_FILL_LIGHT_DISTANCE,
+    offsetX: FOCUSED_FRAME_TOP_FILL_LIGHT_OFFSET_X,
+    offsetY: FOCUSED_FRAME_TOP_FILL_LIGHT_OFFSET_Y,
+    offsetZ: FOCUSED_FRAME_TOP_FILL_LIGHT_OFFSET_Z,
+    targetOffsetX: FOCUSED_FRAME_TOP_FILL_LIGHT_TARGET_OFFSET_X,
+    targetOffsetY: FOCUSED_FRAME_TOP_FILL_LIGHT_TARGET_OFFSET_Y,
+    targetOffsetZ: FOCUSED_FRAME_TOP_FILL_LIGHT_TARGET_OFFSET_Z,
+    penumbra: FOCUSED_FRAME_TOP_FILL_LIGHT_PENUMBRA,
+    decay: FOCUSED_FRAME_TOP_FILL_LIGHT_DECAY,
+    castShadow: false,
+  }), []);
+
+  const backRimLightConfig = useMemo(() => ({
+    color: FOCUSED_FRAME_BACK_RIM_LIGHT_COLOR,
+    intensity: FOCUSED_FRAME_BACK_RIM_LIGHT_INTENSITY,
+    angle: FOCUSED_FRAME_BACK_RIM_LIGHT_ANGLE,
+    distance: FOCUSED_FRAME_BACK_RIM_LIGHT_DISTANCE,
+    offsetX: isLeftSlot ? FOCUSED_LEFT_FRAME_BACK_RIM_LIGHT_OFFSET_X : FOCUSED_RIGHT_FRAME_BACK_RIM_LIGHT_OFFSET_X,
+    offsetY: FOCUSED_FRAME_BACK_RIM_LIGHT_OFFSET_Y,
+    offsetZ: FOCUSED_FRAME_BACK_RIM_LIGHT_OFFSET_Z,
+    targetOffsetX: isLeftSlot ? FOCUSED_LEFT_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_X : FOCUSED_RIGHT_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_X,
+    targetOffsetY: FOCUSED_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_Y,
+    targetOffsetZ: FOCUSED_FRAME_BACK_RIM_LIGHT_TARGET_OFFSET_Z,
+    penumbra: FOCUSED_FRAME_BACK_RIM_LIGHT_PENUMBRA,
+    decay: FOCUSED_FRAME_BACK_RIM_LIGHT_DECAY,
+    castShadow: false,
+  }), [isLeftSlot]);
+
+  if (!project) {
+    return null;
+  }
+
+  return (
+    <>
+      <FocusedProjectLight project={project} config={keyLightConfig} />
+      <FocusedProjectLight project={project} config={rimLightConfig} />
+      <FocusedProjectLight project={project} config={topFillLightConfig} />
+      <FocusedProjectLight project={project} config={backRimLightConfig} />
+    </>
+  );
+}
+
 function FrameTransparencyRimLight({ viewportWidth }) {
   const anchorLayout = useMemo(
     () => buildFrameLayouts(viewportWidth).find((layout) => layout.index === 0) ?? null,
@@ -2168,7 +2503,7 @@ function getGaitParams(smoothedVelocity) {
   return { holdMs: 700, phaseMult: 0.65, fadeMs: 820 };
 }
 
-function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focusedProject, onFocusProject, viewportWidth, isCoarsePointer, smokeSettings, waveSettings }) {
+function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focusedProject, onFocusProject, onEnterProject, viewportWidth, isCoarsePointer, smokeSettings, waveSettings }) {
   const focusCameraVectorRef = useRef(new THREE.Vector3());
   const focusLookAtVectorRef = useRef(new THREE.Vector3());
   const focusViewOffsetRef = useRef(null);
@@ -2178,6 +2513,20 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
     [activeCycle, targetZ, loopProgress, viewportWidth],
   );
   const visibleFrames = focusedProject ? [focusedProject] : frames;
+  const effectiveWaveSettings = useMemo(() => {
+    if (!focusedProject) {
+      return waveSettings;
+    }
+
+    return {
+      ...waveSettings,
+      opacity: waveSettings.opacity * FOCUSED_SURFACE_WAVE_OPACITY_MULTIPLIER,
+      intensity: waveSettings.intensity * FOCUSED_SURFACE_WAVE_INTENSITY_MULTIPLIER,
+      wallBoost: waveSettings.wallBoost * FOCUSED_SURFACE_WAVE_WALL_BOOST_MULTIPLIER,
+      floorBoost: waveSettings.floorBoost * FOCUSED_SURFACE_WAVE_FLOOR_BOOST_MULTIPLIER,
+      ceilingBoost: waveSettings.ceilingBoost * FOCUSED_SURFACE_WAVE_CEILING_BOOST_MULTIPLIER,
+    };
+  }, [focusedProject, waveSettings]);
 
   useFrame((state) => {
     const camera = state.camera;
@@ -2270,27 +2619,32 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
 
   return (
     <>
-      <color attach="background" args={[EXIT_VISUAL.background]} />
-      <fog attach="fog" args={[EXIT_VISUAL.fog.color, EXIT_VISUAL.fog.near, EXIT_VISUAL.fog.far]} />
       <ambientLight intensity={0.88} />
       <directionalLight position={[0, 5.8, -26]} intensity={0.62} color="#fff3e8" />
-      <CorridorGeometry viewportWidth={viewportWidth} isCoarsePointer={isCoarsePointer} waveSettings={waveSettings} />
+      <CorridorGeometry viewportWidth={viewportWidth} isCoarsePointer={isCoarsePointer} waveSettings={effectiveWaveSettings} />
       <GroundSteam settings={smokeSettings} activeCycle={activeCycle} />
       <ExitVisualGlow />
       <ExitFrameLight />
-      <LeftPrimaryFrameLight viewportWidth={viewportWidth} />
-      <RightPrimaryFrameLight viewportWidth={viewportWidth} />
-      <LeftFillSlotLight viewportWidth={viewportWidth} />
-      <RightFillSlotLight viewportWidth={viewportWidth} />
-      <FrameTransparencyRimLight viewportWidth={viewportWidth} />
-      <FrameTransparencyTopFillLight viewportWidth={viewportWidth} />
-      <FrameTransparencyBackRimLight viewportWidth={viewportWidth} />
+      {focusedProject ? (
+        <FocusedFrameLight project={focusedProject} />
+      ) : (
+        <>
+          <LeftPrimaryFrameLight viewportWidth={viewportWidth} />
+          <RightPrimaryFrameLight viewportWidth={viewportWidth} />
+          <LeftFillSlotLight viewportWidth={viewportWidth} />
+          <RightFillSlotLight viewportWidth={viewportWidth} />
+          <FrameTransparencyRimLight viewportWidth={viewportWidth} />
+          <FrameTransparencyTopFillLight viewportWidth={viewportWidth} />
+          <FrameTransparencyBackRimLight viewportWidth={viewportWidth} />
+        </>
+      )}
       {visibleFrames.map((project) => (
         <FramePortal
           key={project.frameKey}
           project={project}
           isFocused={focusedProject?.frameKey === project.frameKey}
           onFocusProject={onFocusProject}
+          onEnterProject={onEnterProject}
         />
       ))}
     </>
@@ -2586,6 +2940,15 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     });
   }
 
+  const handleEnterFocusedPosterProject = useCallback((project) => {
+    if (!project) return;
+
+    onEnterProject(project.id, {
+      targetZ: targetZRef.current,
+      focusedProject: project,
+    });
+  }, [onEnterProject]);
+
   function handleReturnToCorridor() {
     setFocusedProject(null);
   }
@@ -2611,18 +2974,23 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
         dpr={corridorDpr}
         gl={{ powerPreference: 'high-performance', antialias: true, alpha: false, stencil: false }}
       >
-        <CorridorScene
-          targetZ={targetZ}
-          targetZRef={targetZRef}
-          activeCycle={activeCycle}
-          loopProgress={loopProgress}
-          focusedProject={focusedProject}
-          onFocusProject={handleFocusProject}
-          viewportWidth={viewportWidth}
-          isCoarsePointer={isCoarsePointer}
-          smokeSettings={smokeSettings}
-          waveSettings={waveSettings}
-        />
+        <color attach="background" args={[EXIT_VISUAL.background]} />
+        <fog attach="fog" args={[EXIT_VISUAL.fog.color, EXIT_VISUAL.fog.near, EXIT_VISUAL.fog.far]} />
+        <Suspense fallback={null}>
+          <CorridorScene
+            targetZ={targetZ}
+            targetZRef={targetZRef}
+            activeCycle={activeCycle}
+            loopProgress={loopProgress}
+            focusedProject={focusedProject}
+            onFocusProject={handleFocusProject}
+            onEnterProject={handleEnterFocusedPosterProject}
+            viewportWidth={viewportWidth}
+            isCoarsePointer={isCoarsePointer}
+            smokeSettings={smokeSettings}
+            waveSettings={waveSettings}
+          />
+        </Suspense>
       </Canvas>
 
       <GroundSmokeControls
