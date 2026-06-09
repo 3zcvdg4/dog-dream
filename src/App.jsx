@@ -297,6 +297,7 @@ export default function App() {
     const viewportHeight = window.innerHeight || 1;
     const x = Number.isFinite(origin?.x) ? origin.x : viewportWidth / 2;
     const y = Number.isFinite(origin?.y) ? origin.y : viewportHeight / 2;
+    const useSimpleTransition = viewportWidth < 900 || viewportHeight < 900;
 
     clearDreamTransitionTimers();
     preloadDreamPages();
@@ -304,12 +305,34 @@ export default function App() {
 
     let snapshotCanvas = null;
 
-    try {
-      snapshotCanvas = await captureTransitionSnapshot(homeSceneCaptureRef.current);
-    } catch (error) {
-      console.warn('[dogdream] Dream transition snapshot failed.', error);
-      return;
+    if (!useSimpleTransition) {
+      try {
+        snapshotCanvas = await captureTransitionSnapshot(homeSceneCaptureRef.current);
+      } catch (error) {
+        console.warn('[dogdream] Dream transition snapshot failed.', error);
+        return;
+      }
     }
+
+    const transitionTiming = useSimpleTransition
+      ? {
+          switchDelayMs: 520,
+          whiteHoldDelayMs: 180,
+          revealDelayMs: 260,
+          finishDelayMs: 760,
+          revealDurationMs: 280,
+          whiteFillStartMs: 0,
+          whiteFillDurationMs: 220,
+        }
+      : {
+          switchDelayMs: DREAM_TRANSITION_SWITCH_DELAY_MS,
+          whiteHoldDelayMs: DREAM_TRANSITION_WHITE_HOLD_DELAY_MS,
+          revealDelayMs: DREAM_TRANSITION_REVEAL_DELAY_MS,
+          finishDelayMs: DREAM_TRANSITION_FINISH_DELAY_MS,
+          revealDurationMs: DREAM_TRANSITION_FINISH_DELAY_MS - DREAM_TRANSITION_REVEAL_DELAY_MS,
+          whiteFillStartMs: undefined,
+          whiteFillDurationMs: undefined,
+        };
 
     setDreamTransition((current) => {
       if (current.phase !== 'idle') return current;
@@ -319,7 +342,7 @@ export default function App() {
           setCorridorSmokePreset(null);
           setCorridorReturnState(null);
           setView('corridor');
-        }, DREAM_TRANSITION_SWITCH_DELAY_MS),
+        }, transitionTiming.switchDelayMs),
         window.setTimeout(() => {
           setDreamTransition((transition) => {
             if (transition.phase === 'idle') return transition;
@@ -328,7 +351,7 @@ export default function App() {
               phase: 'white-hold',
             };
           });
-        }, DREAM_TRANSITION_WHITE_HOLD_DELAY_MS),
+        }, transitionTiming.whiteHoldDelayMs),
         window.setTimeout(() => {
           setDreamTransition((transition) => {
             if (transition.phase === 'idle') return transition;
@@ -337,11 +360,11 @@ export default function App() {
               phase: 'revealing',
             };
           });
-        }, DREAM_TRANSITION_REVEAL_DELAY_MS),
+        }, transitionTiming.revealDelayMs),
         window.setTimeout(() => {
           setDreamTransition(createIdleDreamTransitionState());
           clearDreamTransitionTimers();
-        }, DREAM_TRANSITION_FINISH_DELAY_MS),
+        }, transitionTiming.finishDelayMs),
       ];
 
       return {
@@ -350,10 +373,10 @@ export default function App() {
         y,
         key: current.key + 1,
         snapshotCanvas,
-        mode: 'ripple',
-        revealDurationMs: DREAM_TRANSITION_FINISH_DELAY_MS - DREAM_TRANSITION_REVEAL_DELAY_MS,
-        whiteFillStartMs: undefined,
-        whiteFillDurationMs: undefined,
+        mode: useSimpleTransition ? 'white-fade' : 'ripple',
+        revealDurationMs: transitionTiming.revealDurationMs,
+        whiteFillStartMs: transitionTiming.whiteFillStartMs,
+        whiteFillDurationMs: transitionTiming.whiteFillDurationMs,
       };
     });
   }
@@ -497,7 +520,7 @@ export default function App() {
       )}
 
       {showRotateTip && (
-        <div className="rotate-tip-overlay" role="dialog" aria-modal="true" aria-label="??????">
+        <div className="rotate-tip-overlay" role="dialog" aria-modal="true" aria-label="请旋转屏幕">
           <div className="rotate-tip-panel">
             <div className="rotate-tip-icon" aria-hidden="true">
               <span className="rotate-tip-phone">
@@ -505,8 +528,8 @@ export default function App() {
               </span>
             </div>
             <div className="rotate-tip-copy">
-              <p className="rotate-tip-title">?????</p>
-              <p className="rotate-tip-subtitle">????????</p>
+              <p className="rotate-tip-title">请旋转屏幕</p>
+              <p className="rotate-tip-subtitle">横屏体验更佳，便于阅读和操作</p>
             </div>
           </div>
         </div>
