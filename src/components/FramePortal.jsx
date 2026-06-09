@@ -6,6 +6,18 @@ import * as THREE from 'three';
 const FLOAT_AMPLITUDE = 0.14;
 const FLOAT_SPEED = 0.6;
 const FLOAT_PHASE_OFFSET = 1.5;
+const HOVER_FORWARD_VECTOR = new THREE.Vector3(0, 0, 1);
+const FOCUS_HOVER_AIM_X = 0.31;
+const FOCUS_HOVER_AIM_Y = 0.3;
+const FOCUS_HOVER_TILT_Z = THREE.MathUtils.degToRad(1.8);
+const FOCUS_HOVER_ROTATION_LERP = 0.12;
+const FOCUS_HOVER_ROTATION_RETURN_LERP = 0.038;
+const FOCUS_HOVER_FLOAT_LERP = 0.1;
+const FOCUS_HOVER_POINTER_LERP = 0.12;
+const FOCUS_HOVER_RETURN_LERP = 0.02;
+const FOCUS_HOVER_INTENSITY_RETURN_LERP = 0.024;
+const FOCUS_HOVER_HIT_AREA_SCALE_X = 1.18;
+const FOCUS_HOVER_HIT_AREA_SCALE_Y = 1.14;
 
 // 画框边框基础颜色：这里先定成比参考图更浅一点的浅蓝琉璃底色。
 const FRAME_BORDER_COLOR = '#0010a1';
@@ -384,9 +396,23 @@ function areFramePropsEqual(previousProps, nextProps) {
 
 function FramePortal({ project, isFocused, onFocusProject, onEnterProject }) {
   const groupRef = useRef(null);
+  const tiltGroupRef = useRef(null);
+  const hoverActiveRef = useRef(false);
+  const hoverPointerRef = useRef(new THREE.Vector2(0, 0));
+  const hoverPointerTargetRef = useRef(new THREE.Vector2(0, 0));
+  const hoverIntensityRef = useRef(0);
+  const floatInfluenceRef = useRef(1);
+  const hoverAimDirectionRef = useRef(new THREE.Vector3(0, 0, 1));
+  const hoverDeltaQuaternionRef = useRef(new THREE.Quaternion());
+  const hoverRollQuaternionRef = useRef(new THREE.Quaternion());
+  const hoverTargetQuaternionRef = useRef(new THREE.Quaternion());
   const texture = project.imageUrl ? useTexture(project.imageUrl) : null;
   const frameWidth = project.frameWidth ?? 1.34;
   const frameHeight = project.frameHeight ?? 2.18;
+  const baseQuaternion = useMemo(
+    () => new THREE.Quaternion().setFromEuler(new THREE.Euler(...project.rotation)),
+    [project.rotation],
+  );
   const {
     imageZ,
     innerFrameZ,
@@ -512,10 +538,44 @@ function FramePortal({ project, isFocused, onFocusProject, onEnterProject }) {
     posterGlassHighlightMaterial.dispose();
   }, [borderMaterial, imageMaterial, innerFrameMaterial, posterGlassHighlightMaterial, posterInnerShadowMaterial]);
 
+  useEffect(() => {
+    if (isFocused) return;
+
+    hoverActiveRef.current = false;
+    hoverPointerRef.current.set(0, 0);
+    hoverPointerTargetRef.current.set(0, 0);
+  }, [isFocused]);
+
   const handleClick = useCallback((event) => {
     event.stopPropagation();
     onFocusProject(project);
   }, [onFocusProject, project]);
+
+  const updateHoverPointer = useCallback((event) => {
+    if (!isFocused || !tiltGroupRef.current) return;
+
+    const localPoint = tiltGroupRef.current.worldToLocal(event.point.clone());
+    const hoverHalfWidth = (frameWidth * FOCUS_HOVER_HIT_AREA_SCALE_X) / 2;
+    const hoverHalfHeight = (frameHeight * FOCUS_HOVER_HIT_AREA_SCALE_Y) / 2;
+    const normalizedX = THREE.MathUtils.clamp(localPoint.x / hoverHalfWidth, -1, 1);
+    const normalizedY = THREE.MathUtils.clamp(localPoint.y / hoverHalfHeight, -1, 1);
+
+    hoverActiveRef.current = true;
+    hoverPointerTargetRef.current.set(normalizedX, normalizedY);
+  }, [frameHeight, frameWidth, isFocused]);
+
+  const handlePointerEnter = useCallback((event) => {
+    updateHoverPointer(event);
+  }, [updateHoverPointer]);
+
+  const handlePointerMove = useCallback((event) => {
+    updateHoverPointer(event);
+  }, [updateHoverPointer]);
+
+  const handlePointerLeave = useCallback(() => {
+    hoverActiveRef.current = false;
+    hoverPointerTargetRef.current.set(0, 0);
+  }, []);
 
   const handlePosterClick = useCallback((event) => {
     event.stopPropagation();
@@ -529,54 +589,110 @@ function FramePortal({ project, isFocused, onFocusProject, onEnterProject }) {
   }, [isFocused, onEnterProject, onFocusProject, project]);
 
   useFrame((state) => {
-    if (!groupRef.current) return;
+    if (!groupRef.current || !tiltGroupRef.current) return;
+
     const baseY = project.position[1];
-    groupRef.current.position.y = baseY + Math.sin(state.clock.elapsedTime * FLOAT_SPEED + project.index * FLOAT_PHASE_OFFSET) * FLOAT_AMPLITUDE;
+    const floatWave = Math.sin(state.clock.elapsedTime * FLOAT_SPEED + project.index * FLOAT_PHASE_OFFSET) * FLOAT_AMPLITUDE;
+    const hoverTarget = isFocused && hoverActiveRef.current ? 1 : 0;
+    const floatTarget = hoverTarget > 0 ? 0 : 1;
+
+    hoverIntensityRef.current = THREE.MathUtils.lerp(
+      hoverIntensityRef.current,
+      hoverTarget,
+      hoverActiveRef.current ? FOCUS_HOVER_ROTATION_LERP : FOCUS_HOVER_INTENSITY_RETURN_LERP,
+    );
+    hoverPointerRef.current.lerp(
+      hoverPointerTargetRef.current,
+      hoverActiveRef.current ? FOCUS_HOVER_POINTER_LERP : FOCUS_HOVER_RETURN_LERP,
+    );
+    floatInfluenceRef.current = THREE.MathUtils.lerp(
+      floatInfluenceRef.current,
+      floatTarget,
+      FOCUS_HOVER_FLOAT_LERP,
+    );
+
+    groupRef.current.position.y = baseY + floatWave * floatInfluenceRef.current;
+
+    hoverAimDirectionRef.current
+      .set(
+        hoverPointerRef.current.x * FOCUS_HOVER_AIM_X,
+        hoverPointerRef.current.y * FOCUS_HOVER_AIM_Y,
+        1,
+      )
+      .normalize();
+
+    hoverDeltaQuaternionRef.current.setFromUnitVectors(HOVER_FORWARD_VECTOR, hoverAimDirectionRef.current);
+    hoverRollQuaternionRef.current.setFromAxisAngle(
+      HOVER_FORWARD_VECTOR,
+      hoverPointerRef.current.x * hoverPointerRef.current.y * FOCUS_HOVER_TILT_Z * hoverIntensityRef.current,
+    );
+
+    hoverTargetQuaternionRef.current
+      .copy(baseQuaternion)
+      .multiply(hoverDeltaQuaternionRef.current)
+      .multiply(hoverRollQuaternionRef.current);
+
+    tiltGroupRef.current.quaternion.slerp(
+      hoverTargetQuaternionRef.current,
+      hoverActiveRef.current ? FOCUS_HOVER_ROTATION_LERP : FOCUS_HOVER_ROTATION_RETURN_LERP,
+    );
   });
 
   return (
-    <group ref={groupRef} position={project.position} rotation={project.rotation} onClick={handleClick}>
-      <mesh
-        geometry={frameGeometry}
-        material={borderMaterial}
-        castShadow // 让画框边框可以把阴影投出去
-        receiveShadow // 让画框边框自己也能接住别的阴影层次
-      />
-      <mesh
-        position={[0, 0, innerFrameZ]}
-        geometry={innerFrameGeometry}
-        material={innerFrameMaterial}
-        castShadow // 让第二圈套框也参与投影，层次会更真实
-        receiveShadow // 内框自己也要接住光影，避免像贴上去的薄片
-      />
-      <mesh
-        position={[0, 0, imageZ]}
-        geometry={imageGeometry}
-        material={texture ? imageMaterial : OPAQUE_IMAGE_FALLBACK}
-        onClick={handlePosterClick}
-        receiveShadow // 让海报面接住边框或灯打出来的阴影变化
+    <group ref={groupRef} position={project.position} onClick={handleClick}>
+      <group
+        ref={tiltGroupRef}
+        rotation={project.rotation}
+        onPointerEnter={handlePointerEnter}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
       >
-      </mesh>
-      {texture ? (
-        <>
-          <mesh
-            position={[0, 0, imageZ + POSTER_INNER_SHADOW_Z_OFFSET]}
-            scale={[lightFacingScaleX, 1, 1]}
-            geometry={imageGeometry}
-            material={posterInnerShadowMaterial}
-            onClick={handlePosterClick}
-            renderOrder={1}
-          />
-          <mesh
-            position={[0, 0, imageZ + POSTER_GLASS_HIGHLIGHT_Z_OFFSET]}
-            scale={[lightFacingScaleX, 1, 1]}
-            geometry={imageGeometry}
-            material={posterGlassHighlightMaterial}
-            onClick={handlePosterClick}
-            renderOrder={2}
-          />
-        </>
-      ) : null}
+        <mesh position={[0, 0, imageZ - 0.002]}>
+          <planeGeometry args={[frameWidth * FOCUS_HOVER_HIT_AREA_SCALE_X, frameHeight * FOCUS_HOVER_HIT_AREA_SCALE_Y]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        </mesh>
+        <mesh
+          geometry={frameGeometry}
+          material={borderMaterial}
+          castShadow // 让画框边框可以把阴影投出去
+          receiveShadow // 让画框边框自己也能接住别的阴影层次
+        />
+        <mesh
+          position={[0, 0, innerFrameZ]}
+          geometry={innerFrameGeometry}
+          material={innerFrameMaterial}
+          castShadow // 让第二圈套框也参与投影，层次会更真实
+          receiveShadow // 内框自己也要接住光影，避免像贴上去的薄片
+        />
+        <mesh
+          position={[0, 0, imageZ]}
+          geometry={imageGeometry}
+          material={texture ? imageMaterial : OPAQUE_IMAGE_FALLBACK}
+          onClick={handlePosterClick}
+          receiveShadow // 让海报面接住边框或灯打出来的阴影变化
+        >
+        </mesh>
+        {texture ? (
+          <>
+            <mesh
+              position={[0, 0, imageZ + POSTER_INNER_SHADOW_Z_OFFSET]}
+              scale={[lightFacingScaleX, 1, 1]}
+              geometry={imageGeometry}
+              material={posterInnerShadowMaterial}
+              onClick={handlePosterClick}
+              renderOrder={1}
+            />
+            <mesh
+              position={[0, 0, imageZ + POSTER_GLASS_HIGHLIGHT_Z_OFFSET]}
+              scale={[lightFacingScaleX, 1, 1]}
+              geometry={imageGeometry}
+              material={posterGlassHighlightMaterial}
+              onClick={handlePosterClick}
+              renderOrder={2}
+            />
+          </>
+        ) : null}
+      </group>
     </group>
   );
 }

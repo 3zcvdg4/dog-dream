@@ -16,11 +16,19 @@ const TOUCH_SCROLL_MULTIPLIER = 2.45;
 const TOUCH_AXIS_LOCK_THRESHOLD = 5;
 const CAMERA_Z_LERP = 0.22;
 const CAMERA_XY_LERP = 0.18;
+const FOCUSED_LIGHT_DEBUG_DEFAULTS = {
+  key: true,
+  rim: true,
+  topFill: true,
+  backRim: true,
+};
 const PAW_PHASE_PER_DELTA = 0.0042;
 const MAX_PAW_PHASE_INCREMENT = 0.4;
 const VELOCITY_SMOOTH_FACTOR = 0.12;
 const PAW_FADE_BASE_MS = 700;
+const FOCUS_COPY_REVEAL_DELAY_MS = 80;
 const WALL_X = 3.25;
+const FOCUSED_FRAME_WALL_OUTSET = 0.34;
 const CORRIDOR_HEIGHT = 3.6;
 const CORRIDOR_SEGMENT_LENGTH = LOOP_LENGTH;
 const FRAME_WIDTH = 1.22;
@@ -30,23 +38,30 @@ const RIGHT_FRAME_Y = 1.9;
 const CAMERA_FOV = 50;
 
 function getFocusZOffsetMagnitude(viewportWidth) {
-  if (viewportWidth <= 599) return 0.24;
-  if (viewportWidth <= 767) return 0.18;
-  if (viewportWidth <= 1023) return 0.08;
   return 0;
 }
 
 function getFrameWallX(viewportWidth) {
-  if (viewportWidth <= 599) return WALL_X - 0.42;
-  if (viewportWidth <= 767) return WALL_X - 0.3;
-  if (viewportWidth <= 1023) return WALL_X - 0.18;
   return WALL_X;
 }
 
+function applyFocusedProjectWallOffset(project, viewportWidth) {
+  if (!project) {
+    return project;
+  }
+
+  const sideSign = project.side < 0 ? -1 : 1;
+  const focusedFrameX = sideSign * (getFrameWallX(viewportWidth) - FOCUSED_FRAME_WALL_OUTSET);
+
+  return {
+    ...project,
+    position: [focusedFrameX, project.position[1], project.position[2]],
+    cameraX: focusedFrameX - sideSign * FOCUSED_CAMERA_WALL_DISTANCE,
+    lookAtX: focusedFrameX,
+  };
+}
+
 function getRoamingFrameZShift(viewportWidth) {
-  if (viewportWidth <= 599) return -0.75;
-  if (viewportWidth <= 767) return -0.55;
-  if (viewportWidth <= 1023) return -0.3;
   return 0;
 }
 
@@ -57,41 +72,31 @@ function getTextureMaxDimension(viewportWidth, isCoarsePointer) {
 }
 
 function getFocusScreenShiftX(viewportWidth) {
-  if (viewportWidth <= 599) return 0.28;
-  if (viewportWidth <= 767) return 0.2;
-  if (viewportWidth <= 1023) return 0.08;
   return 0;
 }
 
 function getFocusScreenShiftY(viewportWidth) {
-  if (viewportWidth <= 599) return -0.1;
-  if (viewportWidth <= 767) return -0.08;
   return 0;
 }
 
 function getDesktopFocusViewOffsetX(viewportWidth) {
-  if (viewportWidth <= 1023) return 0;
   if (viewportWidth <= 1439) return 170;
   if (viewportWidth <= 1659) return 250;
-  return 300;
+  return 220;
 }
 
 function getMobileFocusViewOffsetY(viewportWidth) {
-  if (viewportWidth <= 599) return 72;
-  if (viewportWidth <= 767) return 56;
-  if (viewportWidth <= 1023) return 42;
   return 0;
 }
 
 function getFocusCameraFov(viewportWidth) {
-  if (viewportWidth <= 599) return 56;
-  if (viewportWidth <= 767) return 55;
-  if (viewportWidth <= 1023) return 53;
   return CAMERA_FOV;
 }
 
 function getFocusCameraState(project, viewportWidth) {
-  if (!project) {
+  const focusedProject = applyFocusedProjectWallOffset(project, viewportWidth);
+
+  if (!focusedProject) {
     return {
       position: [0, 1.5, 0],
       fov: getRoamingCameraFov(viewportWidth),
@@ -99,24 +104,20 @@ function getFocusCameraState(project, viewportWidth) {
   }
 
   const focusZOffsetMagnitude = getFocusZOffsetMagnitude(viewportWidth);
-  const focusZOffset = project.side < 0 ? focusZOffsetMagnitude : -focusZOffsetMagnitude;
+  const focusZOffset = focusedProject.side < 0 ? focusZOffsetMagnitude : -focusZOffsetMagnitude;
   const focusScreenShiftY = getFocusScreenShiftY(viewportWidth);
 
   return {
     position: [
-      project.cameraX,
-      project.cameraY + focusScreenShiftY,
-      project.cameraZ + focusZOffset,
+      focusedProject.cameraX,
+      focusedProject.cameraY + focusScreenShiftY,
+      focusedProject.cameraZ + focusZOffset,
     ],
     fov: getFocusCameraFov(viewportWidth),
   };
 }
 
 function getRoamingCameraFov(viewportWidth) {
-  if (viewportWidth <= 599) return 62;
-  if (viewportWidth <= 767) return 60;
-  if (viewportWidth <= 1023) return 56;
-  if (viewportWidth <= 1280) return 52;
   return CAMERA_FOV;
 }
 
@@ -2327,12 +2328,14 @@ function FocusedFrameLight({ project }) {
     return null;
   }
 
+  const lightDebug = project.focusedLightDebug ?? FOCUSED_LIGHT_DEBUG_DEFAULTS;
+
   return (
     <>
-      <FocusedProjectLight project={project} config={keyLightConfig} />
-      <FocusedProjectLight project={project} config={rimLightConfig} />
-      <FocusedProjectLight project={project} config={topFillLightConfig} />
-      <FocusedProjectLight project={project} config={backRimLightConfig} />
+      {lightDebug.key ? <FocusedProjectLight project={project} config={keyLightConfig} /> : null}
+      {lightDebug.rim ? <FocusedProjectLight project={project} config={rimLightConfig} /> : null}
+      {lightDebug.topFill ? <FocusedProjectLight project={project} config={topFillLightConfig} /> : null}
+      {lightDebug.backRim ? <FocusedProjectLight project={project} config={backRimLightConfig} /> : null}
     </>
   );
 }
@@ -2503,7 +2506,21 @@ function getGaitParams(smoothedVelocity) {
   return { holdMs: 700, phaseMult: 0.65, fadeMs: 820 };
 }
 
-function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focusedProject, onFocusProject, onEnterProject, viewportWidth, isCoarsePointer, smokeSettings, waveSettings }) {
+function CorridorScene({
+  targetZ,
+  targetZRef,
+  activeCycle,
+  loopProgress,
+  focusedProject,
+  displayedProject,
+  onFocusProject,
+  onEnterProject,
+  viewportWidth,
+  isCoarsePointer,
+  smokeSettings,
+  waveSettings,
+  focusedLightDebug,
+}) {
   const focusCameraVectorRef = useRef(new THREE.Vector3());
   const focusLookAtVectorRef = useRef(new THREE.Vector3());
   const focusViewOffsetRef = useRef(null);
@@ -2512,7 +2529,17 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
     () => createGalleryFrames(activeCycle, targetZ, loopProgress, viewportWidth),
     [activeCycle, targetZ, loopProgress, viewportWidth],
   );
-  const visibleFrames = focusedProject ? [focusedProject] : frames;
+  const shiftedFocusedProject = useMemo(() => {
+    if (!focusedProject) {
+      return null;
+    }
+
+    return {
+      ...applyFocusedProjectWallOffset(focusedProject, viewportWidth),
+      focusedLightDebug,
+    };
+  }, [focusedLightDebug, focusedProject, viewportWidth]);
+  const visibleFrames = shiftedFocusedProject ? [shiftedFocusedProject] : frames;
   const effectiveWaveSettings = useMemo(() => {
     if (!focusedProject) {
       return waveSettings;
@@ -2531,11 +2558,11 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
   useFrame((state) => {
     const camera = state.camera;
 
-    if (focusedProject) {
+    if (shiftedFocusedProject) {
       const desktopFocusViewOffsetX = getDesktopFocusViewOffsetX(viewportWidth);
       const mobileFocusViewOffsetY = getMobileFocusViewOffsetY(viewportWidth);
-      const focusViewOffsetX = viewportWidth > 1023 ? desktopFocusViewOffsetX : 0;
-      const focusViewOffsetY = viewportWidth <= 1023 ? mobileFocusViewOffsetY : 0;
+      const focusViewOffsetX = desktopFocusViewOffsetX;
+      const focusViewOffsetY = mobileFocusViewOffsetY;
       const nextFocusViewOffset = (focusViewOffsetX !== 0 || focusViewOffsetY !== 0)
         ? `${state.size.width}x${state.size.height}:${focusViewOffsetX}:${focusViewOffsetY}`
         : 'none';
@@ -2572,21 +2599,22 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
       }
 
       const focusZOffsetMagnitude = getFocusZOffsetMagnitude(viewportWidth);
-      const focusZOffset = focusedProject.side < 0 ? focusZOffsetMagnitude : -focusZOffsetMagnitude;
+      const focusZOffset = shiftedFocusedProject.side < 0 ? focusZOffsetMagnitude : -focusZOffsetMagnitude;
       const focusScreenShiftX = getFocusScreenShiftX(viewportWidth);
       const focusScreenShiftY = getFocusScreenShiftY(viewportWidth);
       focusCameraVectorRef.current.set(
-        focusedProject.cameraX,
-        focusedProject.cameraY + focusScreenShiftY,
-        focusedProject.cameraZ + focusZOffset,
+        shiftedFocusedProject.cameraX,
+        shiftedFocusedProject.cameraY + focusScreenShiftY,
+        shiftedFocusedProject.cameraZ + focusZOffset,
       );
       focusLookAtVectorRef.current.set(
-        focusedProject.lookAtX + focusedProject.side * focusScreenShiftX,
-        focusedProject.lookAtY + focusScreenShiftY,
-        focusedProject.lookAtZ,
+        shiftedFocusedProject.lookAtX + shiftedFocusedProject.side * focusScreenShiftX,
+        shiftedFocusedProject.lookAtY + focusScreenShiftY,
+        shiftedFocusedProject.lookAtZ,
       );
       camera.position.lerp(focusCameraVectorRef.current, 0.12);
       camera.lookAt(focusLookAtVectorRef.current);
+
       return;
     }
 
@@ -2625,8 +2653,8 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
       <GroundSteam settings={smokeSettings} activeCycle={activeCycle} />
       <ExitVisualGlow />
       <ExitFrameLight />
-      {focusedProject ? (
-        <FocusedFrameLight project={focusedProject} />
+      {shiftedFocusedProject ? (
+        <FocusedFrameLight project={shiftedFocusedProject} />
       ) : (
         <>
           <LeftPrimaryFrameLight viewportWidth={viewportWidth} />
@@ -2642,7 +2670,7 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
         <FramePortal
           key={project.frameKey}
           project={project}
-          isFocused={focusedProject?.frameKey === project.frameKey}
+          isFocused={displayedProject?.frameKey === project.frameKey}
           onFocusProject={onFocusProject}
           onEnterProject={onEnterProject}
         />
@@ -2654,12 +2682,15 @@ function CorridorScene({ targetZ, targetZRef, activeCycle, loopProgress, focused
 export default function DreamCorridor({ initialState, smokePreset, onConsumeSmokePreset, onEnterProject, onWakeUp }) {
   const initialTargetZ = initialState?.targetZ ?? 0;
   const [targetZ, setTargetZ] = useState(initialTargetZ);
+  const [focusTargetProject, setFocusTargetProject] = useState(initialState?.focusedProject ?? null);
   const [focusedProject, setFocusedProject] = useState(initialState?.focusedProject ?? null);
   const [pawActive, setPawActive] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [smokeSettings, setSmokeSettings] = useState(() => loadGroundSmokeSettings());
   const [waveSettings, setWaveSettings] = useState(() => loadSurfaceWaveSettings());
+  const [focusedLightDebug, setFocusedLightDebug] = useState(FOCUSED_LIGHT_DEBUG_DEFAULTS);
   const pawTimerRef = useRef(null);
+  const focusCopyRevealTimerRef = useRef(null);
   const lastScrollTimeRef = useRef(0);
   const smoothedVelocityRef = useRef(0);
   const pawHoldMsRef = useRef(520);
@@ -2808,9 +2839,26 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
 
   useEffect(() => () => {
     window.clearTimeout(pawTimerRef.current);
+    window.clearTimeout(focusCopyRevealTimerRef.current);
     window.cancelAnimationFrame(wheelFrameRef.current);
     window.cancelAnimationFrame(returnToRoamFrameRef.current);
   }, []);
+
+  useEffect(() => {
+    window.clearTimeout(focusCopyRevealTimerRef.current);
+
+    if (!focusTargetProject) {
+      setFocusedProject(null);
+      return undefined;
+    }
+
+    // 卡片改为点击后几乎立刻出现，不再等待镜头接近目标点。
+    focusCopyRevealTimerRef.current = window.setTimeout(() => {
+      setFocusedProject(focusTargetProject);
+    }, FOCUS_COPY_REVEAL_DELAY_MS);
+
+    return () => window.clearTimeout(focusCopyRevealTimerRef.current);
+  }, [focusTargetProject]);
 
   useEffect(() => {
     if (!initialState?.resumeFromProject || !initialState?.focusedProject) {
@@ -2818,6 +2866,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     }
 
     returnToRoamFrameRef.current = window.requestAnimationFrame(() => {
+      setFocusTargetProject(null);
       setFocusedProject(null);
     });
 
@@ -2833,6 +2882,43 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    function handleFocusedLightDebugKeydown(event) {
+      if ((!focusTargetProject && !focusedProject) || event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      const keyMap = {
+        '1': 'key',
+        '2': 'rim',
+        '3': 'topFill',
+        '4': 'backRim',
+      };
+      const targetKey = keyMap[event.key];
+
+      if (!targetKey) {
+        return;
+      }
+
+      event.preventDefault();
+      setFocusedLightDebug((prev) => ({
+        ...prev,
+        [targetKey]: !prev[targetKey],
+      }));
+    }
+
+    window.addEventListener('keydown', handleFocusedLightDebugKeydown);
+    return () => window.removeEventListener('keydown', handleFocusedLightDebugKeydown);
+  }, [focusTargetProject, focusedProject]);
+
+  useEffect(() => {
+    if (focusTargetProject || focusedProject) {
+      return;
+    }
+
+    setFocusedLightDebug(FOCUSED_LIGHT_DEBUG_DEFAULTS);
+  }, [focusTargetProject, focusedProject]);
+
   const extendPawVisibility = useCallback(() => {
     setPawActive(true);
     window.clearTimeout(pawTimerRef.current);
@@ -2840,7 +2926,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
   }, []);
 
   const applyScrollDelta = useCallback((rawDelta, inputType = 'wheel') => {
-    if (focusedProject) return;
+    if (focusTargetProject) return;
 
     const now = performance.now();
     const dt = now - lastScrollTimeRef.current;
@@ -2874,14 +2960,14 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     motionQueueRef.current.hasTargetZ = true;
 
     scheduleMotionFlush();
-  }, [focusedProject, scheduleMotionFlush]);
+  }, [focusTargetProject, scheduleMotionFlush]);
 
   function handleWheel(event) {
     applyScrollDelta(event.deltaY, 'wheel');
   }
 
   function handleTouchStart(event) {
-    if (focusedProject || event.touches.length !== 1) return;
+    if (focusTargetProject || event.touches.length !== 1) return;
     if (event.target instanceof Element && event.target.closest('button')) return;
 
     const touch = event.touches[0];
@@ -2895,7 +2981,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
 
   function handleTouchMove(event) {
     const touchState = touchStateRef.current;
-    if (!touchState.active || focusedProject || event.touches.length !== 1) return;
+    if (!touchState.active || focusTargetProject || event.touches.length !== 1) return;
 
     const touch = event.touches[0];
     const deltaX = touchState.lastX - touch.clientX;
@@ -2929,16 +3015,18 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
   }
 
   function handleFocusProject(project) {
-    setFocusedProject(project);
+    if (!project) return;
+
+    setFocusTargetProject(project);
   }
 
-  function handleEnterDeepDream() {
+  const handleEnterDeepDream = useCallback(() => {
     if (!focusedProject) return;
     onEnterProject(focusedProject.id, {
       targetZ: targetZRef.current,
       focusedProject,
     });
-  }
+  }, [focusedProject, onEnterProject]);
 
   const handleEnterFocusedPosterProject = useCallback((project) => {
     if (!project) return;
@@ -2949,9 +3037,10 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     });
   }, [onEnterProject]);
 
-  function handleReturnToCorridor() {
+  const handleReturnToCorridor = useCallback(() => {
+    setFocusTargetProject(null);
     setFocusedProject(null);
-  }
+  }, []);
 
   return (
     <main
@@ -2959,7 +3048,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
       className={[
         'corridor',
         'page-shell',
-        focusedProject ? 'is-focused' : '',
+        focusTargetProject ? 'is-focused' : '',
         WALL_ALIGNMENT_DEBUG.enabled && WALL_ALIGNMENT_DEBUG.disableScreenOverlay ? 'corridor--debug-overlay-off' : '',
       ].filter(Boolean).join(' ')}
       onWheel={handleWheel}
@@ -2982,13 +3071,15 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
             targetZRef={targetZRef}
             activeCycle={activeCycle}
             loopProgress={loopProgress}
-            focusedProject={focusedProject}
+            focusedProject={focusTargetProject}
+            displayedProject={focusedProject}
             onFocusProject={handleFocusProject}
             onEnterProject={handleEnterFocusedPosterProject}
             viewportWidth={viewportWidth}
             isCoarsePointer={isCoarsePointer}
             smokeSettings={smokeSettings}
             waveSettings={waveSettings}
+            focusedLightDebug={focusedLightDebug}
           />
         </Suspense>
       </Canvas>
@@ -3012,12 +3103,23 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
 
       {focusedProject && (
         <aside className="focus-copy" aria-label="项目简介">
-          <p className="eyebrow">项目简介</p>
-          <h2>{focusedProject.title}</h2>
-          <p>{focusedProject.summary}</p>
-          <div className="focus-actions">
-            <button className="site-button" type="button" onClick={handleEnterDeepDream}>进入深梦</button>
-            <button className="site-button site-button--ghost" type="button" onClick={handleReturnToCorridor}>返回走廊</button>
+          <div className="focus-copy__panel">
+            <div className="focus-copy__body">
+              <h2>{focusedProject.title}</h2>
+              <p className="focus-copy__summary">{focusedProject.summary}</p>
+            </div>
+
+            <div className="focus-actions">
+              <button className="focus-action focus-action--primary" type="button" onClick={handleEnterDeepDream}>
+                <span className="focus-action__icon focus-action__icon--enter" aria-hidden="true" />
+                <span className="focus-action__label">进入深梦</span>
+              </button>
+
+              <button className="focus-action focus-action--secondary" type="button" onClick={handleReturnToCorridor}>
+                <span className="focus-action__icon focus-action__icon--return" aria-hidden="true" />
+                <span className="focus-action__label">返回走廊</span>
+              </button>
+            </div>
           </div>
         </aside>
       )}

@@ -620,29 +620,46 @@ button {
   top: 50%;
   right: clamp(92px, 14vw, 180px);
   z-index: 5;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: block;
   width: clamp(320px, 17.3828vw, 445px);
   min-width: 300px;
   min-height: clamp(192px, 10.1563vw, 260px);
-  padding: clamp(20px, 0.9375vw, 24px);
-  border: 1px solid rgb(255 255 255 / 62%);
-  border-radius: clamp(14px, 0.7031vw, 18px);
-  background: linear-gradient(180deg, rgb(255 255 255 / 78%), rgb(248 248 245 / 58%));
-  box-shadow: 0 18px 48px rgb(15 23 42 / 10%), inset 0 1px 0 rgb(255 255 255 / 72%);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: center / 100% 100% no-repeat url('/assets/Card Background.png');
+  box-shadow: none;
+  filter: drop-shadow(0 18px 34px rgb(10 10 10 / 18%));
+  isolation: isolate;
+  overflow: visible;
   transform: translate(calc(-1 * clamp(360px, 42vw, 560px)), -50%);
 }
 
+.focus-copy__panel {
+  position: absolute;
+  inset: var(--focus-copy-panel-top, 24%) var(--focus-copy-panel-right, 14%) var(--focus-copy-panel-bottom, 17%) var(--focus-copy-panel-left, 14%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--focus-copy-panel-gap, 12px);
+  color: #fff;
+}
+
+.focus-copy__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  color: #fff;
+}
+
 .eyebrow {
-  margin: 0 0 10px;
-  color: rgb(42 42 38 / 42%);
+  margin: 0 0 8px;
+  color: #fff;
   font-family: Arial, 'Noto Sans SC', sans-serif;
-  font-size: 10px;
+  font-size: var(--focus-copy-eyebrow-size, 10px);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -654,12 +671,14 @@ button {
 }
 
 .focus-copy h2 {
-  font-size: 30px;
-  letter-spacing: -0.03em;
-  line-height: 1.04;
+  color: #fff;
+  font-family: var(--focus-copy-title-font-family, Arial, 'Noto Sans SC', sans-serif);
+  font-size: var(--focus-copy-title-size, 30px);
+  letter-spacing: var(--focus-copy-title-letter-spacing, -0.03em);
+  line-height: var(--focus-copy-title-line-height, 1.02);
+  text-wrap: balance;
 }
 
-.focus-copy p:not(.eyebrow),
 .project-info p,
 .project-info dd {
   color: rgb(24 24 22 / 66%);
@@ -667,22 +686,116 @@ button {
   line-height: 1.72;
 }
 
-.focus-copy p:not(.eyebrow) {
-  margin: 10px 0 0;
-  font-size: 14px;
+.focus-copy p:not(.eyebrow),
+.focus-copy h2,
+.focus-copy__body,
+.focus-copy__body * {
+  color: #fff;
+}
+
+.focus-copy__summary {
+  margin: var(--focus-copy-summary-margin-top, 10px) 0 0;
+  color: #fff;
+  font-family: Arial, 'Noto Sans SC', sans-serif;
+  font-size: calc(var(--focus-copy-summary-size, 11px) + var(--focus-copy-summary-size-offset, 4px));
+  line-height: var(--focus-copy-summary-line-height, 1.55);
+  line-clamp: var(--focus-copy-summary-lines, 4);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--focus-copy-summary-lines, 4);
 }
 
 .focus-actions,
 .project-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: 12px;
   margin-top: 18px;
   container-type: inline-size;
 }
 
-.focus-actions .site-button,
+.focus-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  gap: var(--focus-copy-action-gap, 10px);
+  margin-top: var(--focus-copy-actions-margin-top, 0);
+}
+
+.focus-action {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-family: Arial, 'Noto Sans SC', sans-serif;
+  line-height: 1;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.focus-action:hover {
+  opacity: 0.76;
+  transform: none;
+}
+
+.focus-action__label,
+.focus-action__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.focus-action__icon {
+  flex: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.focus-action__label {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.focus-action--primary {
+  justify-self: start;
+  justify-content: flex-start;
+  gap: var(--focus-copy-primary-icon-gap, 7px);
+  min-height: 0;
+  font-size: calc(var(--focus-copy-primary-size, 11px) + var(--focus-copy-primary-size-offset, 2px));
+  font-weight: var(--focus-copy-primary-font-weight, 600);
+  letter-spacing: var(--focus-copy-primary-letter-spacing, 0.015em);
+  margin-right: auto;
+  text-align: left;
+}
+
+.focus-action--primary .focus-action__icon {
+  width: calc((var(--focus-copy-primary-size, 11px) + var(--focus-copy-primary-size-offset, 2px)) * var(--focus-copy-primary-icon-width-scale, 1.46));
+  height: calc((var(--focus-copy-primary-size, 11px) + var(--focus-copy-primary-size-offset, 2px)) * var(--focus-copy-primary-icon-height-scale, 0.92));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 12' fill='none'%3E%3Cpath d='M17 6H2.6M6.6 1.5 2.1 6l4.5 4.5' stroke='white' stroke-width='1.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+}
+
+.focus-action--secondary {
+  justify-self: end;
+  gap: var(--focus-copy-secondary-icon-gap, 4px);
+  min-height: 0;
+  color: var(--focus-copy-secondary-color, rgb(255 255 255 / 78%));
+  font-size: calc(var(--focus-copy-secondary-size, 9px) + var(--focus-copy-secondary-size-offset, 2px));
+  font-weight: var(--focus-copy-secondary-font-weight, 500);
+  letter-spacing: var(--focus-copy-secondary-letter-spacing, 0.015em);
+}
+
+.focus-action--secondary .focus-action__icon {
+  width: calc((var(--focus-copy-secondary-size, 9px) + var(--focus-copy-secondary-size-offset, 2px)) * var(--focus-copy-secondary-icon-width-scale, 1.5));
+  height: calc((var(--focus-copy-secondary-size, 9px) + var(--focus-copy-secondary-size-offset, 2px)) * var(--focus-copy-secondary-icon-height-scale, 0.96));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 12' fill='none'%3E%3Cpath d='M16.25 2v5.15H6.8M9.7 4.05 6.1 7.15l3.6 2.95' stroke='white' stroke-opacity='0.88' stroke-width='1.45' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+}
+
 .project-actions .site-button,
 .sleep-button,
 .wake-button {
@@ -707,13 +820,11 @@ button {
   -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
-.focus-actions .site-button,
 .project-actions .site-button {
   width: 100%;
 }
 
 @container (max-width: 360px) {
-  .focus-actions .site-button,
   .project-actions .site-button {
     padding-inline: 14px;
     font-size: 13px;
@@ -722,7 +833,6 @@ button {
 }
 
 @container (max-width: 300px) {
-  .focus-actions .site-button,
   .project-actions .site-button {
     padding-inline: 10px;
     font-size: 12px;
@@ -767,7 +877,6 @@ button {
     right: clamp(38px, 5vw, 78px);
     width: min(35vw, 336px);
     min-width: 240px;
-    padding: 24px 22px 22px;
     transform: translate(calc(-1 * clamp(148px, 15vw, 220px)), -50%);
   }
 
@@ -806,7 +915,7 @@ button {
     transform: translateX(-50%);
   }
 }
-.focus-actions .site-button:hover,
+.project-actions .site-button:hover,
 .sleep-button:hover,
 .wake-button:hover {
   border-color: rgb(255 255 255 / 78%);
@@ -814,7 +923,7 @@ button {
   box-shadow: 0 14px 30px rgb(15 23 42 / 14%), inset 0 1px 0 rgb(255 255 255 / 92%);
 }
 
-.focus-actions .site-button--ghost,
+.project-actions .site-button--ghost,
 .wake-button {
   border-color: rgb(255 255 255 / 54%);
   background: linear-gradient(180deg, rgb(255 255 255 / 54%), rgb(244 244 241 / 34%));
@@ -1266,19 +1375,161 @@ button {
   }
 }
 
+/* ============================================================================
+   【聚焦卡片调参入口 / 直接改这里】
+   搜索关键词：聚焦卡片调参入口
+
+   你现在如果要自己微调，优先改下面 `.corridor { ... }` 里的这些变量：
+
+   1）卡片位置 / 大小
+   - --focus-copy-right               卡片离屏幕右边距离
+   - --focus-copy-width               卡片宽度
+   - --focus-copy-min-height          卡片最小高度
+   - --focus-copy-translate-x         卡片整体左右位移
+   - --focus-copy-screen-shift-x      卡片额外横向微调
+   - --focus-copy-screen-shift-y      卡片额外纵向微调
+
+   2）黑块文字安全边距
+   - --focus-copy-panel-top           黑块内容距上
+   - --focus-copy-panel-right         黑块内容距右
+   - --focus-copy-panel-bottom        黑块内容距下
+   - --focus-copy-panel-left          黑块内容距左
+   - --focus-copy-panel-gap           黑块内部上下区块间距
+
+   3）标题 / 正文
+   - --focus-copy-title-size          标题字号
+   - --focus-copy-title-font-family   标题字体
+   - --focus-copy-summary-size        正文基础字号
+   - --focus-copy-summary-size-offset  正文额外放大量
+   - --focus-copy-summary-margin-top  标题和正文间距
+
+   4）两个按钮
+   - --focus-copy-primary-size        “进入深梦”基础字号
+   - --focus-copy-primary-size-offset “进入深梦”额外放大量
+   - --focus-copy-secondary-size      “返回走廊”基础字号
+   - --focus-copy-secondary-size-offset “返回走廊”额外放大量
+   - --focus-copy-action-gap          两按钮之间距离
+   - --focus-copy-primary-icon-gap    左按钮图标和文字距离
+   - --focus-copy-secondary-icon-gap  右按钮图标和文字距离
+
+   5）不同屏幕尺寸
+   下面还有几段 @media：
+   - 1440 以上
+   - 1660 以上
+   - 768~1023
+   - 600~767
+   - 599 以下
+   - 2560×1279 特殊尺寸
+
+   建议：
+   - 先只改 `.corridor { ... }` 这一段的基础变量
+   - 如果只有某个分辨率不对，再去改对应的 @media
+   ============================================================================ */
+
 .corridor {
+  /* ===== 聚焦卡片：外层定位 ===== */
+  /* 聚焦卡片整体缩放：0.9 表示缩小 10% */
+  --focus-copy-scale: 0.9;
+  /* 卡片垂直锚点，常用 50% 表示整体按中线定位 */
   --focus-copy-top: 50%;
+  /* 卡片距离屏幕右侧的基础距离 */
   --focus-copy-right: clamp(68px, 7.45vw, 112px);
+  /* 如需改成左侧定位可改这里；当前保持 auto */
   --focus-copy-left: auto;
+  /* 如需改成底部定位可改这里；当前保持 auto */
   --focus-copy-bottom: auto;
-  --focus-copy-width: clamp(288px, 15.6445vw, 400.5px);
-  --focus-copy-min-height: clamp(172.8px, 18.2955vh, 234px);
-  --focus-copy-padding: clamp(18px, 0.8594vw, 21.6px);
-  --focus-copy-radius: clamp(12.6px, 0.6328vw, 16.2px);
+  /* 卡片宽度 */
+  --focus-copy-width: clamp(245px, 13.3vw, 340px);
+  /* 卡片最小高度 */
+  --focus-copy-min-height: clamp(147px, 15.55vh, 199px);
+  /* 卡片内层额外 padding，当前不用 */
+  --focus-copy-padding: 0;
+  /* 卡片圆角，当前不用 */
+  --focus-copy-radius: 0;
+  /* 卡片整体向左平移距离 */
   --focus-copy-translate-x: calc(-1 * clamp(190px, 14.75vw, 256px));
+  /* 卡片整体垂直基准位移，通常保持 -50% 做居中 */
   --focus-copy-translate-y: -50%;
-  --focus-copy-title-size: 24px;
-  --focus-copy-summary-size: 13px;
+
+  /* ===== 聚焦卡片：标题 / 正文 / 按钮字体 ===== */
+  /* 标题字体族 */
+  --focus-copy-title-font-family: Arial, 'Noto Sans SC', sans-serif;
+  /* 标题字号 */
+  --focus-copy-title-size: 20px;
+  /* 标题字距 */
+  --focus-copy-title-letter-spacing: -0.03em;
+  /* 标题行高 */
+  --focus-copy-title-line-height: 1.02;
+  /* 正文基础字号 */
+  --focus-copy-summary-size: 11px;
+  /* 正文在基础字号上再额外增加多少像素 */
+  --focus-copy-summary-size-offset: 2px;
+  /* 正文行高 */
+  --focus-copy-summary-line-height: 1.35;
+  /* 正文与标题的上间距 */
+  --focus-copy-summary-margin-top: 10px;
+  /* 正文最多显示几行 */
+  --focus-copy-summary-lines: 4;
+  /* 旧眉标题字号；当前虽然已不用，先保留方便你自己试 */
+  --focus-copy-eyebrow-size: 8.5px;
+  /* “进入深梦”基础字号 */
+  --focus-copy-primary-size: 11px;
+  /* “进入深梦”在基础字号上再增加多少像素 */
+  --focus-copy-primary-size-offset: 2px;
+  /* “进入深梦”字重 */
+  --focus-copy-primary-font-weight: 600;
+  /* “进入深梦”字距 */
+  --focus-copy-primary-letter-spacing: 0.015em;
+  /* “返回走廊”基础字号 */
+  --focus-copy-secondary-size: 9px;
+  /* “返回走廊”在基础字号上再增加多少像素 */
+  --focus-copy-secondary-size-offset: 2px;
+  /* “返回走廊”字重 */
+  --focus-copy-secondary-font-weight: 500;
+  /* “返回走廊”字距 */
+  --focus-copy-secondary-letter-spacing: 0.015em;
+
+  /* ===== 聚焦卡片：按钮高度 / 间距 / 图标 ===== */
+  /* 主按钮理论高度，当前主要作为预留参数 */
+  --focus-copy-primary-height: 31px;
+  /* 次按钮理论高度，当前主要作为预留参数 */
+  --focus-copy-secondary-height: 24px;
+  /* 两个按钮之间的水平间距 */
+  --focus-copy-action-gap: 9px;
+  /* 按钮整体距离正文区的顶部间距 */
+  --focus-copy-actions-margin-top: 0;
+  /* “进入深梦”图标与文字间距 */
+  --focus-copy-primary-icon-gap: 7px;
+  /* “返回走廊”图标与文字间距 */
+  --focus-copy-secondary-icon-gap: 4px;
+  /* “进入深梦”图标宽度缩放 */
+  --focus-copy-primary-icon-width-scale: 1.46;
+  /* “进入深梦”图标高度缩放 */
+  --focus-copy-primary-icon-height-scale: 0.92;
+  /* “返回走廊”图标宽度缩放 */
+  --focus-copy-secondary-icon-width-scale: 1.5;
+  /* “返回走廊”图标高度缩放 */
+  --focus-copy-secondary-icon-height-scale: 0.96;
+  /* “返回走廊”文字颜色 */
+  --focus-copy-secondary-color: rgb(255 255 255 / 78%);
+
+  /* ===== 聚焦卡片：黑块安全边距 / 内部排版 ===== */
+  /* 黑块内部整体上下文案区的布局间距 */
+  --focus-copy-panel-gap: 12px;
+  /* 黑块内容距离上边的安全边距 */
+  --focus-copy-panel-top: clamp(40px, 22.2%, 65px);
+  /* 黑块内容距离右边的安全边距 */
+  --focus-copy-panel-right: clamp(50px, 12.5%, 65px);
+  /* 黑块内容距离下边的安全边距 */
+  --focus-copy-panel-bottom: clamp(36px, 24.6%, 80px);
+  /* 黑块内容距离左边的安全边距 */
+  --focus-copy-panel-left: clamp(31px, 18.7%, 63px);
+
+  /* ===== 聚焦卡片：额外屏幕级微调 ===== */
+  /* 卡片整体额外横向微调，正负都可改 */
+  --focus-copy-screen-shift-x: 0px;
+  /* 卡片整体额外纵向微调，正数下移，负数上移 */
+  --focus-copy-screen-shift-y: clamp(17px, 7.82vh, 100px);
 }
 
 .focus-copy {
@@ -1289,139 +1540,83 @@ button {
   width: min(var(--focus-copy-width), calc(100vw - 32px));
   max-width: calc(100vw - 32px);
   min-height: var(--focus-copy-min-height, auto);
+  aspect-ratio: 1784 / 1577;
   min-width: 0;
   padding: var(--focus-copy-padding);
   border-radius: var(--focus-copy-radius);
-  transform: translate(var(--focus-copy-translate-x), var(--focus-copy-translate-y));
+  transform: translate(
+    var(--focus-copy-horizontal-shift, calc(var(--focus-copy-translate-x) + var(--focus-copy-screen-shift-x))),
+    var(--focus-copy-vertical-shift, calc(var(--focus-copy-translate-y) + var(--focus-copy-screen-shift-y)))
+  ) scale(var(--focus-copy-scale));
+  transform-origin: right center;
 }
 
 .focus-copy h2 {
   font-size: var(--focus-copy-title-size);
-  line-height: 1.02;
+  line-height: var(--focus-copy-title-line-height);
 }
 
-.focus-copy p:not(.eyebrow) {
-  font-size: var(--focus-copy-summary-size);
-  line-height: 1.62;
+.focus-copy__summary {
+  font-size: calc(var(--focus-copy-summary-size) + var(--focus-copy-summary-size-offset));
 }
+
+/* ===================== 聚焦页响应式调参索引 =====================
+  1) 基础 `.corridor { ... }`
+    - 默认桌面段先改这里
+    - 适合 1280~1439 左右，或你不确定命中哪个断点时先从这里试
+
+  2) `@media (min-width: 1440px)`
+    - 大桌面段
+    - 适合 1440~1659 左右
+
+  3) `@media (min-width: 1660px)`
+    - 更宽桌面段
+    - 适合 1660 以上；2560×1279 也主要受这里和下面的专用补丁控制
+
+  4) 1023 以下不再单独分移动端/平板
+    - 统一沿用基础 `.corridor { ... }` 规则
+
+  5) 下面几个“特殊分辨率补丁”
+    - 只在某些特定比例/尺寸不对时再改
+
+  常用优先调这几个：
+  - --focus-copy-right             卡片离右边多远
+  - --focus-copy-width             卡片整体宽度
+  - --focus-copy-min-height        卡片整体高度下限
+  - --focus-copy-translate-x       卡片相对当前锚点再向左/右挪多少
+  - --focus-copy-screen-shift-x    全局横向微调
+  - --focus-copy-screen-shift-y    全局纵向微调
+  - --focus-copy-title-size        标题字号
+  - --focus-copy-summary-size      正文字号
+  =============================================================== */
 
 @media (min-width: 1440px) {
   .corridor {
-    --focus-copy-right: clamp(134px, 10vw, 214px);
-    --focus-copy-width: clamp(324px, 15.6445vw, 400.5px);
-    --focus-copy-min-height: clamp(194px, 18.2955vh, 234px);
-    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
-    --focus-copy-translate-x: calc(-1 * clamp(336px, 19.1vw, 438px));
-    --focus-copy-title-size: 27px;
+   /* 注意：如果你当前屏幕命中这个断点，这里的值会覆盖上面基础 `.corridor` 里的同名变量 */
+   /* 大桌面：卡片离右更远、稍放大 */
+   --focus-copy-right: clamp(134px, 10vw, 214px);
+   --focus-copy-width: clamp(275px, 13.3vw, 340px);
+   --focus-copy-min-height: clamp(165px, 15.55vh, 199px);
+   --focus-copy-translate-x: calc(-1 * clamp(336px, 19.1vw, 438px));
+   --focus-copy-title-size: 23px;
+    --focus-copy-summary-size: 11px;
+   --focus-copy-primary-size: 12px;
+   --focus-copy-secondary-size: 9.5px;
+   --focus-copy-primary-height: 33px;
   }
 }
 
 @media (min-width: 1660px) {
   .corridor {
-    --focus-copy-right: clamp(156px, 9.2vw, 236px);
-    --focus-copy-width: clamp(351px, 15.6445vw, 400.5px);
-    --focus-copy-min-height: clamp(205px, 18.2955vh, 234px);
-    --focus-copy-padding: clamp(20px, 0.8594vw, 21.6px);
-    --focus-copy-translate-x: calc(-1 * clamp(398px, 20.4vw, 526px));
-    --focus-copy-title-size: 28px;
-  }
-}
-
-@media (max-width: 1023px) and (min-width: 768px) {
-  .corridor {
-    --focus-copy-top: 50%;
-    --focus-copy-right: clamp(22px, 5vw, 48px);
-    --focus-copy-left: auto;
-    --focus-copy-bottom: auto;
-    --focus-copy-width: clamp(214px, 29vw, 286px);
-    --focus-copy-min-height: clamp(168px, 22vw, 214px);
-    --focus-copy-padding: 17px 18px 15px;
-    --focus-copy-radius: 24px;
-    --focus-copy-translate-x: 0;
-    --focus-copy-translate-y: -50%;
-    --focus-copy-title-size: 24px;
-  }
-
-  .corridor.is-focused .wake-button {
-    top: 18px;
-    right: 20px;
-    bottom: auto;
-  }
-}
-
-@media (max-width: 767px) and (min-width: 600px) {
-  .corridor {
-    --focus-copy-top: 50%;
-    --focus-copy-right: clamp(14px, 4vw, 28px);
-    --focus-copy-left: auto;
-    --focus-copy-bottom: auto;
-    --focus-copy-width: clamp(184px, 28vw, 218px);
-    --focus-copy-min-height: clamp(154px, 25vw, 196px);
-    --focus-copy-padding: 14px 15px 13px;
-    --focus-copy-radius: 22px;
-    --focus-copy-translate-x: 0;
-    --focus-copy-translate-y: -50%;
-    --focus-copy-title-size: 22px;
-    --focus-copy-summary-size: 12px;
-  }
-
-  .focus-actions {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .focus-actions .site-button,
-  .project-actions .site-button {
-    min-height: 30px;
-    padding: 0 25px;
-  }
-
-  .corridor.is-focused .wake-button {
-    top: 16px;
-    right: 18px;
-    bottom: auto;
-  }
-}
-
-@media (max-width: 599px) {
-  .corridor {
-    --focus-copy-top: 50%;
-    --focus-copy-right: clamp(10px, 3.5vw, 18px);
-    --focus-copy-left: auto;
-    --focus-copy-bottom: auto;
-    --focus-copy-width: clamp(162px, 34vw, 198px);
-    --focus-copy-min-height: clamp(142px, 35vw, 184px);
-    --focus-copy-padding: 12px 12px 11px;
-    --focus-copy-radius: 20px;
-    --focus-copy-translate-x: 0;
-    --focus-copy-translate-y: -50%;
-    --focus-copy-title-size: 18px;
-    --focus-copy-summary-size: 12px;
-  }
-
-  .focus-actions {
-    gap: 8px;
-    margin-top: 18px;
-  }
-
-  .focus-actions .site-button,
-  .project-actions .site-button {
-    min-height: 28px;
-    padding: 0 23px;
-  }
-
-  .corridor-status {
-    gap: 10px;
-    font-size: 10px;
-  }
-
-  .corridor.is-focused .wake-button {
-    top: 14px;
-    right: 14px;
-    bottom: auto;
-    min-height: 28px;
-    padding: 6px 23px;
-    font-size: 14px;
+   /* 注意：如果你当前屏幕命中这个断点，这里的值会继续覆盖基础值 */
+   /* 更宽桌面：继续增加右侧留白与卡片尺寸 */
+   --focus-copy-right: clamp(156px, 9.2vw, 236px);
+   --focus-copy-width: clamp(298px, 13.3vw, 340px);
+   --focus-copy-min-height: clamp(174px, 15.55vh, 199px);
+   --focus-copy-translate-x: calc(-1 * clamp(398px, 20.4vw, 526px));
+   --focus-copy-title-size: 24px;
+   --focus-copy-primary-size: 12.5px;
+   --focus-copy-secondary-size: 10px;
   }
 }
 
@@ -1432,18 +1627,21 @@ button {
     --focus-copy-right: clamp(62px, 7vw, 86px);
     --focus-copy-left: auto;
     --focus-copy-bottom: auto;
-    --focus-copy-width: clamp(210px, 21vw, 238px);
-    --focus-copy-min-height: clamp(176px, 19vh, 210px);
-    --focus-copy-padding: 16px 16px 14px;
-    --focus-copy-radius: 23px;
+    --focus-copy-width: clamp(179px, 17.85vw, 202px);
+    --focus-copy-min-height: clamp(150px, 16.15vh, 179px);
+    --focus-copy-padding: 0;
+    --focus-copy-radius: 0;
     --focus-copy-translate-x: calc(-1 * clamp(72px, 7vw, 104px));
     --focus-copy-translate-y: -50%;
-    --focus-copy-title-size: 22px;
-    --focus-copy-summary-size: 12px;
+    --focus-copy-title-size: 18px;
+    --focus-copy-summary-size: 10px;
+    --focus-copy-primary-size: 9.5px;
+    --focus-copy-secondary-size: 8px;
+    --focus-copy-primary-height: 25px;
+    --focus-copy-secondary-height: 20px;
   }
 
   .focus-actions {
-    grid-template-columns: 1fr;
     gap: 8px;
   }
 }
@@ -1455,13 +1653,20 @@ button {
     --focus-copy-right: clamp(92px, 7vw, 128px);
     --focus-copy-left: auto;
     --focus-copy-bottom: auto;
-    --focus-copy-width: clamp(246px, 17vw, 286px);
-    --focus-copy-min-height: clamp(188px, 19vh, 220px);
-    --focus-copy-padding: 18px 17px 15px;
+    --focus-copy-width: clamp(209px, 14.45vw, 243px);
+    --focus-copy-min-height: clamp(160px, 16.15vh, 187px);
     --focus-copy-translate-x: calc(-1 * clamp(110px, 8vw, 150px));
     --focus-copy-translate-y: -50%;
-    --focus-copy-title-size: 24px;
-    --focus-copy-summary-size: 13px;
+    --focus-copy-title-size: 20px;
+    --focus-copy-summary-size: 11px;
+  }
+}
+
+@media (width: 2560px) and (height: 1279px) {
+  .corridor {
+    --focus-copy-width: 339px;
+    --focus-copy-screen-shift-x: -63px;
+    --focus-copy-screen-shift-y: 100px;
   }
 }
 
@@ -1471,4 +1676,97 @@ button {
     --focus-copy-right: clamp(104px, 7.4vw, 136px);
     --focus-copy-translate-x: calc(-1 * clamp(150px, 11vw, 188px));
   }
+}
+
+/* ===================== 聚焦页母版自适应 =====================
+   以 2560×1279 为母版，但不是一上来就缩卡片。
+   规则改为：
+   1) 先尽量保留母版里“画框 + 卡片”的相对大小和距离；
+   2) 外面还有空间时，只让两侧留白增减，不主动缩卡片；
+   3) 当整体组合快碰到安全边距时，才按同一比例一起缩。
+   这样更接近“画框和卡片视为一体”的目标，同时不碰 3D 聚焦链路。
+   ========================================================== */
+
+.corridor.is-focused {
+  /* ===== 2560×1279 母版测得的整体组合边界 =====
+     left / right / top / bottom 为聚焦后整体构图的母版留白。
+     width-limit / height-limit 是开始触发整体缩放时使用的母版可压缩区。 */
+  --focus-master-viewport-width: 2560px;
+  --focus-master-viewport-height: 1279px;
+  --focus-master-left-margin: 800.6px;
+  --focus-master-right-margin: 820.76px;
+  --focus-master-top-margin: 291.11px;
+  --focus-master-bottom-margin: 291.11px;
+  --focus-master-width-limit: 958.8px;
+  --focus-master-height-limit: 696.78px;
+
+  /* ===== 整体组合安全边距 =====
+     只要屏幕还能留出这组安全边距，就保持母版大小不缩。
+     宽高继续缩小到逼近这里时，才开始整组等比缩放。 */
+  --focus-master-safe-x: 72px;
+  --focus-master-safe-y: 48px;
+
+  --focus-master-scale: min(
+    1,
+    min(
+      calc((100vw - (var(--focus-master-safe-x) * 2)) / var(--focus-master-width-limit)),
+      calc((100dvh - (var(--focus-master-safe-y) * 2)) / var(--focus-master-height-limit))
+    )
+  );
+  --focus-copy-effective-scale: max(var(--focus-master-scale), 0.75);
+  /* 大中屏保持原始展签位置，只在更小屏幕上逐步向画面中线过渡。 */
+  --focus-copy-center-progress: clamp(0, calc((0.82 - var(--focus-master-scale)) / 0.14), 1);
+  --focus-copy-center-progress-inverse: calc(1 - var(--focus-copy-center-progress));
+  /* 小屏居中时仍保留卡片与画框的安全距离，避免压到画框上。 */
+  --focus-copy-center-guard-x: clamp(44px, 7vw, 118px);
+
+  /* 这组值仍然使用 2560×1279 母版参数，但只在触发阈值后一起缩放。 */
+  --focus-copy-width: calc(339px * var(--focus-copy-effective-scale));
+  --focus-copy-min-height: calc(198.83px * var(--focus-copy-effective-scale));
+  --focus-copy-translate-x: calc(-522.24px * var(--focus-master-scale));
+  --focus-copy-screen-shift-x: calc(-63px * var(--focus-master-scale));
+  --focus-copy-screen-shift-y: calc(100px * var(--focus-master-scale));
+
+  /* 右侧定位不再直接跟着视口线性缩小，而是先保留母版构图。
+     屏幕变宽/变窄时，优先吞吐两侧留白；只有逼近安全边距才一起缩。 */
+  --focus-copy-docked-right: calc(
+    (var(--focus-master-right-margin) * var(--focus-master-scale))
+    + ((100vw - (var(--focus-master-viewport-width) * var(--focus-master-scale))) / 2)
+    + var(--focus-copy-translate-x)
+    + var(--focus-copy-screen-shift-x)
+  );
+  --focus-copy-centered-right: calc(50% - var(--focus-copy-center-guard-x));
+  --focus-copy-right: calc(
+    (var(--focus-copy-center-progress-inverse) * var(--focus-copy-docked-right))
+    + (var(--focus-copy-center-progress) * var(--focus-copy-centered-right))
+  );
+  --focus-copy-horizontal-shift: calc(
+    (var(--focus-copy-center-progress-inverse) * calc(var(--focus-copy-translate-x) + var(--focus-copy-screen-shift-x)))
+    + (var(--focus-copy-center-progress) * 50%)
+  );
+  --focus-copy-vertical-shift: calc(
+    (var(--focus-copy-center-progress-inverse) * calc(var(--focus-copy-translate-y) + var(--focus-copy-screen-shift-y)))
+    + (var(--focus-copy-center-progress) * var(--focus-copy-translate-y))
+  );
+
+  /* 内部黑块排版也跟同一比例走，避免外壳缩了、文字关系不跟。 */
+  --focus-copy-panel-top: calc(65px * var(--focus-copy-effective-scale));
+  --focus-copy-panel-right: calc(50px * var(--focus-copy-effective-scale));
+  --focus-copy-panel-bottom: calc(73.73px * var(--focus-copy-effective-scale));
+  --focus-copy-panel-left: calc(63px * var(--focus-copy-effective-scale));
+  --focus-copy-panel-gap: calc(12px * var(--focus-copy-effective-scale));
+  --focus-copy-summary-margin-top: calc(10px * var(--focus-copy-effective-scale));
+  --focus-copy-action-gap: calc(9px * var(--focus-copy-effective-scale));
+  --focus-copy-primary-icon-gap: calc(7px * var(--focus-copy-effective-scale));
+  --focus-copy-secondary-icon-gap: calc(4px * var(--focus-copy-effective-scale));
+
+  /* 文字与按钮字号也绑定到同一个整体缩放比例。 */
+  --focus-copy-title-size: calc(24px * var(--focus-copy-effective-scale));
+  --focus-copy-summary-size: calc(11px * var(--focus-copy-effective-scale));
+  --focus-copy-summary-size-offset: calc(2px * var(--focus-copy-effective-scale));
+  --focus-copy-eyebrow-size: calc(8.5px * var(--focus-copy-effective-scale));
+  --focus-copy-primary-size: calc(12.5px * var(--focus-copy-effective-scale));
+  --focus-copy-primary-size-offset: calc(2px * var(--focus-copy-effective-scale));
+  --focus-copy-secondary-size: calc(10px * var(--focus-copy-effective-scale));
+  --focus-copy-secondary-size-offset: calc(2px * var(--focus-copy-effective-scale));
 }
