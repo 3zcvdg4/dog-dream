@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react';
 const posterSourceDir = path.resolve(__dirname, 'poster');
 const posterDevRoute = '/__poster';
 const posterBuildDirName = 'poster';
+const contentWorkspaceDir = path.resolve(__dirname, '../网站/三级页面项目合集');
 
 const posterMimeTypes = {
   '.avif': 'image/avif',
@@ -117,5 +118,10 @@ const posterRuntimePlugin = () => {
 };
 
 export default defineConfig({
+  server: {
+    fs: {
+      allow: [__dirname, contentWorkspaceDir],
+    },
+  },
   plugins: [react(), posterRuntimePlugin()],
 });

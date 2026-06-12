@@ -6,6 +6,10 @@
 
 当前技术栈：Vite + React + Three.js。
 
+## 内容工作路径
+
+- 三级页面 / 详情页相关内容的当前工作路径确认为：`G:\正在工作\dogdream\content`
+
 ## 当前素材
 
 - `walk-ffmpeg-2.webm`：当前首页狗狗视频。

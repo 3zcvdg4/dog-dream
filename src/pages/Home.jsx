@@ -12,9 +12,16 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab, sceneC
   const [phase, setPhase] = useState(wakeSignal > 0 ? 'waking' : 'intro');
   const [bubbleBroken, setBubbleBroken] = useState(false);
   const [videoSource, setVideoSource] = useState(wakeSignal > 0 ? wakeupVideo : walkVideo);
+  const [playbackRequest, setPlaybackRequest] = useState(0);
   const [sleepButtonTop, setSleepButtonTop] = useState(null);
   const showBubble = phase === 'dreamReady';
   const showSleep = phase === 'awake';
+
+  function queueVideoPlayback(nextSource, nextPhase) {
+    setPhase(nextPhase);
+    setVideoSource(nextSource);
+    setPlaybackRequest((current) => current + 1);
+  }
 
   function settlePlaybackState(currentPhase) {
     if (currentPhase === 'waking') return 'awake';
@@ -29,6 +36,7 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab, sceneC
       setBubbleBroken(true);
       setPhase('waking');
       setVideoSource(wakeupVideo);
+      setPlaybackRequest((current) => current + 1);
       timers.push(window.setTimeout(() => setBubbleBroken(false), 1900));
       return () => timers.forEach(window.clearTimeout);
     }
@@ -36,6 +44,7 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab, sceneC
     setPhase('intro');
     setBubbleBroken(false);
     setVideoSource(walkVideo);
+    setPlaybackRequest((current) => current + 1);
 
     timers.push(window.setTimeout(() => {
       setPhase((current) => (current === 'intro' ? 'dreamReady' : current));
@@ -64,7 +73,7 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab, sceneC
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, [phase, videoSource]);
+  }, [phase, videoSource, playbackRequest]);
 
   useLayoutEffect(() => {
     if (!showSleep) {
@@ -119,8 +128,7 @@ export default function Home({ wakeSignal, onEnterDream, onEnterSteamLab, sceneC
   }
 
   function handleSleep() {
-    setPhase('sleepingAgain');
-    setVideoSource(sleepVideo);
+    queueVideoPlayback(sleepVideo, 'sleepingAgain');
   }
 
   function handleEnterDream(event) {

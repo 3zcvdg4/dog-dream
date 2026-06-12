@@ -3,14 +3,14 @@ const posterUrl = (fileName) => `${import.meta.env.DEV ? '/__poster' : '/poster'
 export const projects = [
   {
     id: 'project-01',
-    title: 'Project 01',
+    title: 'Dogdream',
     year: '2026',
-    role: 'Brand Designer',
-    services: 'Visual Identity / Art Direction / Layout System',
+    role: '品牌设计师',
+    services: '概念叙事 / 视觉系统 / 前端 / AI 工作流',
     color: '#f3b8b7',
     imageUrl: posterUrl('11.jpg'),
-    summary: '这里是第一个项目简介。后续可以替换成真实品牌项目的概念、目标、视觉方向和你的工作内容。',
-    detail: '三级页面用于展开单个项目：可以放主视觉、品牌系统、过程图、延展物料、项目说明和你的角色。',
+    summary: 'Dogdream 个人网站搭建心路历程与制作记录。\n一只睡着的狗、一条无限向前的走廊，两侧像记忆碎片一样漂浮的画框......',
+    detail: '记录从 Agent 工具探索、首页狗狗视频制作、梦境走廊 3D 搭建，到聚焦页与三级页内容体系的完整过程。',
   },
   {
     id: 'project-02',
