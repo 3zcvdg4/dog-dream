@@ -18,3 +18,14 @@ inspect_transcript*
 transcript_head.txt
 online_index.html
 cursor-mcp-test.pptx
+
+# Local-only backup snapshots and sync helpers
+scripts/
+backups/**
+!backups/
+!backups/checkpoint-20260516-corridor-confirmed/
+!backups/checkpoint-20260516-corridor-confirmed/confirmed-version.patch
+!backups/checkpoint-20260516-corridor-current/
+!backups/checkpoint-20260516-corridor-current/current-version.patch
+!backups/checkpoint-20260516-paw-gait-v1/
+!backups/checkpoint-20260516-paw-gait-v1/gait-v1.patch
