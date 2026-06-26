@@ -1,0 +1,15 @@
+export const ORTUR_SOFT_AURORA = {
+  color1: '#9b81ff',
+  color2: '#b11919',
+  octaveDecay: 0.06,
+  noiseAmplitude: 1.5,
+  brightness: 1.1,
+  speed: 1.3,
+  noiseFrequency: 1.5,
+  bandSpread: 0.7,
+  bandHeight: 0.2,
+  mouseInfluence: 0.4,
+  scale: 2.1,
+  colorSpeed: 0.7,
+  enableMouseInteraction: true,
+};

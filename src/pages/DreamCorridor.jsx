@@ -37,6 +37,10 @@ const LEFT_FRAME_Y = 1.76;
 const RIGHT_FRAME_Y = 1.9;
 const CAMERA_FOV = 50;
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function getFocusZOffsetMagnitude(viewportWidth) {
   return 0;
 }
@@ -159,9 +163,17 @@ const CORRIDOR_TEXTURE_URLS = [
   RIGHT_WALL_TEXTURE_URL,
 ];
 const CORRIDOR_POSTER_URLS = projects.map((project) => project.imageUrl).filter(Boolean);
+const FOCUS_CARD_BACKGROUND_URL = '/assets/Card Background-2.png';
 
-export function preloadCorridorTextures() {
-  useTexture.preload([...CORRIDOR_TEXTURE_URLS, ...CORRIDOR_POSTER_URLS]);
+export function preloadCorridorTextures({ includePosters = false } = {}) {
+  useTexture.preload(includePosters ? [...CORRIDOR_TEXTURE_URLS, ...CORRIDOR_POSTER_URLS] : CORRIDOR_TEXTURE_URLS);
+}
+
+function preloadFocusCardBackground() {
+  if (typeof window === 'undefined') return;
+  const img = new window.Image();
+  img.decoding = 'async';
+  img.src = FOCUS_CARD_BACKGROUND_URL;
 }
 
 preloadCorridorTextures();
@@ -2009,6 +2021,7 @@ function ExitFrameLight() {
     lightRef.current.target.updateMatrixWorld();
   });
 
+  // 走廊灯设置
   return (
     <>
       <spotLight
@@ -2520,9 +2533,11 @@ function CorridorScene({
   smokeSettings,
   waveSettings,
   focusedLightDebug,
+  onFocusedProjectScreenPositionChange,
 }) {
   const focusCameraVectorRef = useRef(new THREE.Vector3());
   const focusLookAtVectorRef = useRef(new THREE.Vector3());
+  const focusedProjectScreenVectorRef = useRef(new THREE.Vector3());
   const focusViewOffsetRef = useRef(null);
   const cameraFovRef = useRef(getRoamingCameraFov(viewportWidth));
   const frames = useMemo(
@@ -2615,8 +2630,21 @@ function CorridorScene({
       camera.position.lerp(focusCameraVectorRef.current, 0.12);
       camera.lookAt(focusLookAtVectorRef.current);
 
+      if (onFocusedProjectScreenPositionChange) {
+        focusedProjectScreenVectorRef.current
+          .set(...shiftedFocusedProject.position)
+          .project(camera);
+
+        onFocusedProjectScreenPositionChange({
+          x: clamp((focusedProjectScreenVectorRef.current.x * 0.5 + 0.5) * state.size.width, 0, state.size.width),
+          y: clamp((-focusedProjectScreenVectorRef.current.y * 0.5 + 0.5) * state.size.height, 0, state.size.height),
+        });
+      }
+
       return;
     }
+
+    onFocusedProjectScreenPositionChange?.(null);
 
     let shouldResetProjectionMatrix = false;
 
@@ -2697,6 +2725,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
   const corridorRef = useRef(null);
   const wheelFrameRef = useRef(0);
   const returnToRoamFrameRef = useRef(0);
+  const focusedProjectScreenOriginRef = useRef(null);
   const touchStateRef = useRef({
     active: false,
     axis: null,
@@ -2842,6 +2871,10 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     window.clearTimeout(focusCopyRevealTimerRef.current);
     window.cancelAnimationFrame(wheelFrameRef.current);
     window.cancelAnimationFrame(returnToRoamFrameRef.current);
+  }, []);
+
+  useEffect(() => {
+    preloadFocusCardBackground();
   }, []);
 
   useEffect(() => {
@@ -3020,12 +3053,17 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     setFocusTargetProject(project);
   }
 
+  const handleFocusedProjectScreenPositionChange = useCallback((position) => {
+    focusedProjectScreenOriginRef.current = position;
+  }, []);
+
   const handleEnterDeepDream = useCallback(() => {
     if (!focusedProject) return;
+
     onEnterProject(focusedProject.id, {
       targetZ: targetZRef.current,
       focusedProject,
-    });
+    }, focusedProjectScreenOriginRef.current);
   }, [focusedProject, onEnterProject]);
 
   const handleEnterFocusedPosterProject = useCallback((project) => {
@@ -3034,7 +3072,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     onEnterProject(project.id, {
       targetZ: targetZRef.current,
       focusedProject: project,
-    });
+    }, focusedProjectScreenOriginRef.current);
   }, [onEnterProject]);
 
   const handleReturnToCorridor = useCallback(() => {
@@ -3080,6 +3118,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
             smokeSettings={smokeSettings}
             waveSettings={waveSettings}
             focusedLightDebug={focusedLightDebug}
+            onFocusedProjectScreenPositionChange={handleFocusedProjectScreenPositionChange}
           />
         </Suspense>
       </Canvas>
@@ -3124,7 +3163,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
         </aside>
       )}
 
-      <button className="site-button wake-button" type="button" onClick={onWakeUp}>wake up</button>
+      <button className="site-button wake-button" type="button" onClick={onWakeUp}>醒来</button>
     </main>
   );
 }

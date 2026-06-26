@@ -1,13 +1,18 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import Home, {
+  HOME_DREAM_BUBBLE_IMAGE_URL,
   HOME_INTRO_VIDEO_SOURCES,
   HOME_SLEEP_VIDEO_SOURCES,
   HOME_WAKE_VIDEO_SOURCES,
   preloadHomeVideo,
 } from './pages/Home.jsx';
+import { ABOUT_LANYARD_INTRO_URL, preloadAboutLanyardAssets } from './components/AboutLanyard.jsx';
 import DreamTransitionOverlay from './components/DreamTransitionOverlay.jsx';
+import LoadingPercent from './components/LoadingPercent.jsx';
+import SiteNav from './components/SiteNav.jsx';
 import { projects } from './data/projects.js';
+import { getProjectContent } from './data/projectContents/index.js';
 
 const DreamCorridor = lazy(() => import('./pages/DreamCorridor.jsx'));
 const ProjectDream = lazy(() => import('./pages/ProjectDream.jsx'));
@@ -39,15 +44,26 @@ const DREAM_CORRIDOR_POSTERS = projects.map((project) => project.imageUrl).filte
 const FOCUS_CARD_BACKGROUND_URL = '/assets/Card Background-2.png';
 const HOME_PRELOAD_IMAGE_URLS = [
   '/assets/Cushion.png',
-  '/assets/Dream Bubble.png',
+  HOME_DREAM_BUBBLE_IMAGE_URL,
+  ABOUT_LANYARD_INTRO_URL,
 ];
 const HOME_PRELOAD_VIDEO_URLS = [HOME_INTRO_VIDEO_SOURCES];
 const HOME_IDLE_VIDEO_URLS = [HOME_WAKE_VIDEO_SOURCES, HOME_SLEEP_VIDEO_SOURCES];
+
+function resolveProjectNavTheme(projectId) {
+  const layout = getProjectContent(projectId)?.layout;
+  if (layout === 'project-02-ortur') return 'ortur';
+  if (layout === 'project-01-editorial') return 'editorial';
+  return 'light';
+}
 const HOME_LOADING_MIN_DURATION_MS = 180;
 const ROUTE_HOME = 'home';
 const ROUTE_CORRIDOR = 'corridor';
 const ROUTE_PROJECT = 'project';
 const ROUTE_STEAM_LAB = 'steam-lab';
+
+const projectById = new Map(projects.map((project) => [project.id, project]));
+const projectBySlug = new Map(projects.map((project) => [project.slug ?? project.id, project]));
 
 const preloadedDreamImages = new Set();
 const preloadedImagePromises = new Map();
@@ -65,7 +81,7 @@ function normalizeRoutePath(pathname) {
 
   const projectMatch = normalizedPath.match(/^\/project\/([^/]+)$/);
   if (projectMatch) {
-    return { view: ROUTE_PROJECT, projectId: decodeURIComponent(projectMatch[1]) };
+    return { view: ROUTE_PROJECT, projectSlug: decodeURIComponent(projectMatch[1]) };
   }
 
   return { view: ROUTE_HOME };
@@ -74,7 +90,11 @@ function normalizeRoutePath(pathname) {
 function buildPathForView(view, projectId) {
   if (view === ROUTE_CORRIDOR) return '/corridor';
   if (view === ROUTE_STEAM_LAB) return '/steam-lab';
-  if (view === ROUTE_PROJECT && projectId) return `/project/${encodeURIComponent(projectId)}`;
+  if (view === ROUTE_PROJECT && projectId) {
+    const project = projectById.get(projectId);
+    const projectSlug = project?.slug ?? projectId;
+    return `/project/${encodeURIComponent(projectSlug)}`;
+  }
   return '/';
 }
 
@@ -84,8 +104,8 @@ function readRouteFromLocation() {
   }
 
   const route = normalizeRoutePath(window.location.pathname);
-  const resolvedProject = route.projectId
-    ? projects.find((project) => project.id === route.projectId)
+  const resolvedProject = route.projectSlug
+    ? projectBySlug.get(route.projectSlug) ?? projectById.get(route.projectSlug)
     : null;
 
   return {
@@ -119,6 +139,10 @@ async function preloadHomeExperience(onProgress) {
   const tasks = [
     ...HOME_PRELOAD_IMAGE_URLS.map((url) => () => preloadHomeImage(url)),
     ...HOME_PRELOAD_VIDEO_URLS.map((url) => () => preloadHomeVideo(url)),
+    () => {
+      preloadAboutLanyardAssets();
+      return Promise.resolve();
+    },
   ];
   const total = Math.max(tasks.length, 1);
   let completed = 0;
@@ -368,6 +392,7 @@ export default function App() {
   const [homeEntryMode, setHomeEntryMode] = useState(initialRoute.view === ROUTE_HOME ? 'loading' : 'resume');
   const [homeReady, setHomeReady] = useState(initialRoute.view !== ROUTE_HOME);
   const [homeLoadingProgress, setHomeLoadingProgress] = useState(initialRoute.view === ROUTE_HOME ? 0 : 1);
+  const [introAboutDismissed, setIntroAboutDismissed] = useState(false);
   const [activeProjectId, setActiveProjectId] = useState(initialRoute.projectId);
   const [corridorReturnState, setCorridorReturnState] = useState(null);
   const [corridorSmokePreset, setCorridorSmokePreset] = useState(null);
@@ -403,6 +428,7 @@ export default function App() {
 
     let cancelled = false;
     const startedAt = performance.now();
+    setIntroAboutDismissed(false);
     setHomeLoadingProgress(0);
 
     preloadHomeExperience((progress) => {
@@ -422,6 +448,11 @@ export default function App() {
       cancelled = true;
     };
   }, [homeReady, view]);
+
+  useEffect(() => {
+    if (view === ROUTE_HOME || introAboutDismissed) return;
+    setIntroAboutDismissed(true);
+  }, [introAboutDismissed, view]);
 
   useEffect(() => {
     if (view !== ROUTE_HOME) return undefined;
@@ -778,11 +809,30 @@ export default function App() {
     setDreamTransition(createIdleDreamTransitionState());
   }
 
+  function navigateHomeFromNav() {
+    if (view === ROUTE_HOME) return;
+    wakeUp();
+  }
+
+  function openProjectFromNav(projectId) {
+    if (!projectId || (projectId === activeProjectId && view === ROUTE_PROJECT)) {
+      return;
+    }
+
+    clearDreamTransitionTimers();
+    setCorridorSmokePreset(null);
+    setCorridorReturnState(null);
+    setActiveProjectId(projectId);
+    setView(ROUTE_PROJECT);
+    setDreamTransition(createIdleDreamTransitionState());
+  }
+
   let content = (
     homeReady ? (
       <Home
         wakeSignal={wakeSignal}
         homeEntryMode={homeEntryMode}
+        playbackBlocked={homeEntryMode === 'intro' && !introAboutDismissed}
         onEnterDream={startDreamEntryTransition}
         onEnterSteamLab={() => setView(ROUTE_STEAM_LAB)}
         sceneCaptureRef={homeSceneCaptureRef}
@@ -795,6 +845,10 @@ export default function App() {
             '--loading-progress': Math.max(0, Math.min(1, homeLoadingProgress)),
           }}
         >
+          <LoadingPercent
+            className="home-loading__percent"
+            progress={homeLoadingProgress}
+          />
           <div className="home-loading__track-wrap">
             <div
               className="home-loading__progress-shell"
@@ -833,6 +887,7 @@ export default function App() {
   if (view === ROUTE_PROJECT) {
     content = (
       <ProjectDream
+        key={activeProject.id}
         project={activeProject}
         onBackToCorridor={startCorridorReturnTransition}
         onWakeUp={wakeUp}
@@ -855,6 +910,36 @@ export default function App() {
 
   return (
     <>
+      {dreamTransition.phase === 'idle' && !showRotateTip && view === ROUTE_HOME && homeReady ? (
+        <SiteNav
+          variant="home"
+          autoOpenAbout={homeEntryMode === 'intro' && !introAboutDismissed}
+          onIntroAboutDismissed={() => setIntroAboutDismissed(true)}
+          onHome={navigateHomeFromNav}
+          onOpenProject={openProjectFromNav}
+        />
+      ) : null}
+
+      {dreamTransition.phase === 'idle' && !showRotateTip && view === ROUTE_CORRIDOR ? (
+        <SiteNav
+          variant="corridor"
+          onHome={navigateHomeFromNav}
+          onOpenProject={openProjectFromNav}
+        />
+      ) : null}
+
+      {dreamTransition.phase === 'idle' && !showRotateTip && view === ROUTE_PROJECT ? (
+        <SiteNav
+          variant="detail"
+          theme={resolveProjectNavTheme(activeProjectId)}
+          currentProjectId={activeProjectId}
+          onHome={navigateHomeFromNav}
+          onOpenProject={openProjectFromNav}
+          onBackToCorridor={startCorridorReturnTransition}
+          onWakeUp={wakeUp}
+        />
+      ) : null}
+
       <Suspense fallback={<main className="page-shell page-shell--locked" aria-busy="true" />}>
         {content}
       </Suspense>

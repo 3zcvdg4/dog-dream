@@ -144,7 +144,14 @@ export function preloadHomeVideo(input) {
   return promise;
 }
 
-export default function Home({ wakeSignal, homeEntryMode = 'intro', playbackBlocked = false, onEnterDream, onEnterSteamLab, sceneCaptureRef }) {
+export default function Home({
+  wakeSignal,
+  homeEntryMode = 'intro',
+  playbackBlocked = false,
+  onEnterDream,
+  onEnterSteamLab,
+  sceneCaptureRef,
+}) {
   const videoRef = useRef(null);
   const cushionRef = useRef(null);
   const playbackFallbackTimerRef = useRef(0);

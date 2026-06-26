@@ -144,6 +144,7 @@ function updateRopeCylinders(j3, j2, j1, fixed, seg0, seg1, seg2) {
 
 function LanyardCloseButton({
   onCloseRequest,
+  onContactRequest,
   closing,
   theme,
   distanceFactor = 2.6,
@@ -152,27 +153,50 @@ function LanyardCloseButton({
   if (closing) return null;
 
   return (
-    <Html
-      transform
-      distanceFactor={distanceFactor}
-      position={[0, -CARD_HEIGHT / 2 - CLOSE_BUTTON_OFFSET_Y + liftWorld, 0.06]}
-      center
-      zIndexRange={[100, 0]}
-      style={{ pointerEvents: 'auto' }}
-    >
-      <button
-        type="button"
-        className={`about-lanyard__close about-lanyard__close--${theme}`}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => {
-          event.stopPropagation();
-          onCloseRequest?.();
-        }}
-        aria-label="收起关于面板"
+    <>
+      <Html
+        transform
+        distanceFactor={distanceFactor}
+        position={[0, CARD_HEIGHT / 2 - 0.38 + liftWorld, 0.06]}
+        center
+        zIndexRange={[100, 0]}
+        style={{ pointerEvents: 'auto' }}
       >
-        <span className="about-lanyard__close-icon" aria-hidden="true">×</span>
-      </button>
-    </Html>
+        <button
+          type="button"
+          className={`about-lanyard__contact about-lanyard__contact--${theme}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onContactRequest?.();
+          }}
+        >
+          联系我
+        </button>
+      </Html>
+
+      <Html
+        transform
+        distanceFactor={distanceFactor}
+        position={[0, -CARD_HEIGHT / 2 - CLOSE_BUTTON_OFFSET_Y + liftWorld, 0.06]}
+        center
+        zIndexRange={[100, 0]}
+        style={{ pointerEvents: 'auto' }}
+      >
+        <button
+          type="button"
+          className={`about-lanyard__close about-lanyard__close--${theme}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onCloseRequest?.();
+          }}
+          aria-label="收起关于面板"
+        >
+          <span className="about-lanyard__close-icon" aria-hidden="true">×</span>
+        </button>
+      </Html>
+    </>
   );
 }
 
@@ -180,6 +204,7 @@ function LanyardBand({
   cardWidth,
   closing = false,
   onCloseRequest,
+  onContactRequest,
   onPullComplete,
   theme,
   closeButtonDistanceFactor = 2.6,
@@ -368,6 +393,7 @@ function LanyardBand({
             </mesh>
             <LanyardCloseButton
               onCloseRequest={onCloseRequest}
+              onContactRequest={onContactRequest}
               closing={closing}
               theme={theme}
               distanceFactor={closeButtonDistanceFactor}
@@ -396,6 +422,7 @@ function LanyardBand({
 function LanyardScene({
   closing,
   onCloseRequest,
+  onContactRequest,
   onPullComplete,
   theme,
   closeButtonDistanceFactor = 2.6,
@@ -413,6 +440,7 @@ function LanyardScene({
         cardWidth={cardWidth}
         closing={closing}
         onCloseRequest={onCloseRequest}
+        onContactRequest={onContactRequest}
         onPullComplete={onPullComplete}
         theme={theme}
         closeButtonDistanceFactor={closeButtonDistanceFactor}
@@ -426,6 +454,7 @@ export default function AboutLanyard({
   sessionKey = 0,
   closing = false,
   onCloseRequest,
+  onContactRequest,
   onPullComplete,
   theme = 'light',
 }) {
@@ -470,6 +499,7 @@ export default function AboutLanyard({
           <LanyardScene
             closing={closing}
             onCloseRequest={onCloseRequest}
+            onContactRequest={onContactRequest}
             onPullComplete={onPullComplete}
             theme={theme}
             closeButtonDistanceFactor={closeButtonLayout.distanceFactor}

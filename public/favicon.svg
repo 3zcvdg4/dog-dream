@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dog Dream">
+  <rect width="64" height="64" rx="16" fill="#f7f6f2"/>
+  <path d="M18 39c3-9 10-14 18-14s15 5 18 14" fill="none" stroke="#1f1a17" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="26" cy="27" r="3" fill="#1f1a17"/>
+  <circle cx="38" cy="27" r="3" fill="#1f1a17"/>
+  <path d="M24 42c4 3 12 3 16 0" fill="none" stroke="#1f1a17" stroke-width="3" stroke-linecap="round"/>
+</svg>

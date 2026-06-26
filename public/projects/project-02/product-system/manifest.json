@@ -1,0 +1,38 @@
+[
+  {
+    "order": 1,
+    "product": "H10",
+    "orig": "H10.jpg",
+    "new": "block-product-01.jpg"
+  },
+  {
+    "order": 2,
+    "product": "H20",
+    "orig": "h20.jpg",
+    "new": "block-product-02.jpg"
+  },
+  {
+    "order": 3,
+    "product": "OLM2Pro S2",
+    "orig": "olm2pros2.jpg",
+    "new": "block-product-03.jpg"
+  },
+  {
+    "order": 4,
+    "product": "R2",
+    "orig": "R2.jpg",
+    "new": "block-product-04.jpg"
+  },
+  {
+    "order": 5,
+    "product": "AL3",
+    "orig": "al3.jpg",
+    "new": "block-product-05.jpg"
+  },
+  {
+    "order": 6,
+    "product": "AL2",
+    "orig": "AL2.jpg",
+    "new": "block-product-06.jpg"
+  }
+]

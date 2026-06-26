@@ -437,15 +437,35 @@ button {
   bottom: calc(var(--scene-dog-visual-height) * var(--cluster-bubble-bottom-ratio));
   z-index: 5;
   width: var(--scene-bubble-width);
+  --bubble-ring-x: -10px;
+  --bubble-ring-y: -15px;
+  --bubble-ring-duration: 2.4s;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
   opacity: 0;
   pointer-events: auto;
+  isolation: isolate;
   transform: scaleX(var(--bubble-flip-x));
   transform-origin: center center;
   transition: opacity 500ms ease, filter 350ms ease, transform 350ms ease;
+}
+
+.dream-bubble::before,
+.dream-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 48%;
+  aspect-ratio: 1;
+  border: 4px solid rgb(100 100 96 / 62%);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(calc(-50% + var(--bubble-ring-x)), calc(-50% + var(--bubble-ring-y))) scale(0);
 }
 
 .dream-bubble:disabled {
@@ -453,6 +473,8 @@ button {
 }
 
 .dream-bubble img {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   transform: translateY(0);
@@ -460,6 +482,15 @@ button {
 
 .dream-bubble.is-visible {
   opacity: 1;
+}
+
+.dream-bubble.is-visible:not(.is-broken)::before {
+  animation: dreamBubbleRingPulse var(--bubble-ring-duration) ease-out infinite;
+}
+
+.dream-bubble.is-visible:not(.is-broken)::after {
+  animation: dreamBubbleRingPulse var(--bubble-ring-duration) ease-out infinite;
+  animation-delay: calc(var(--bubble-ring-duration) * 0.5);
 }
 
 .dream-bubble.is-visible img {
@@ -470,6 +501,13 @@ button {
   opacity: 0;
   filter: blur(9px);
   transform: scaleX(var(--bubble-flip-x)) scale(1.2) rotate(4deg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dream-bubble:not(:disabled):not(.is-broken):hover {
+    filter: drop-shadow(0 10px 22px rgb(80 80 74 / 16%));
+    transform: scaleX(var(--bubble-flip-x)) translateY(-4px) scale(1.03);
+  }
 }
 
 .dog-scene {
@@ -1550,6 +1588,7 @@ button {
 .project-page--project-01-editorial {
   background: var(--p01-page-bg, #f5f2eb);
   color: var(--p01-page-text, #171714);
+  padding-top: var(--site-nav-height, 56px);
 }
 
 .project-page--project-01-editorial .project-body {
@@ -2502,6 +2541,18 @@ button {
 @keyframes bubbleFloat {
   0%, 100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-5%) scale(1.015); }
+}
+
+@keyframes dreamBubbleRingPulse {
+  0% {
+    opacity: 0.82;
+    transform: translate(calc(-50% + var(--bubble-ring-x)), calc(-50% + var(--bubble-ring-y))) scale(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--bubble-ring-x)), calc(-50% + var(--bubble-ring-y))) scale(1);
+  }
 }
 
 @media (max-width: 900px) {

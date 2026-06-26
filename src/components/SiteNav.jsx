@@ -1,11 +1,20 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { projects } from '../data/projects.js';
 import AboutLanyard, { preloadAboutLanyardAssets } from './AboutLanyard.jsx';
+import ContactFormModal from './ContactFormModal.jsx';
 
 const COLLAPSE_DELAY_MS = 2500;
 const PROJECT_MENU_CLOSE_DELAY_MS = 180;
 
-function AboutCurtainPanel({ open, sessionKey, onClose, closing, onCloseRequest, theme }) {
+function AboutCurtainPanel({
+  open,
+  sessionKey,
+  onClose,
+  closing,
+  onCloseRequest,
+  onContactRequest,
+  theme,
+}) {
   const showPanel = open || closing;
 
   return (
@@ -24,6 +33,7 @@ function AboutCurtainPanel({ open, sessionKey, onClose, closing, onCloseRequest,
             closing={closing}
             theme={theme}
             onCloseRequest={onCloseRequest}
+            onContactRequest={onContactRequest}
             onPullComplete={onClose}
           />
         </Suspense>
@@ -42,6 +52,7 @@ export default function SiteNav({
   onOpenProject,
   onBackToCorridor,
   onWakeUp,
+  onContactSubmitOpen,
   hidden = false,
 }) {
   const rootRef = useRef(null);
@@ -55,6 +66,7 @@ export default function SiteNav({
   const [isAboutClosing, setIsAboutClosing] = useState(false);
   const [aboutSession, setAboutSession] = useState(0);
   const [isProjectsOpen, setIsProjectsOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   const publishedProjects = useMemo(
     () => projects.filter((project) => project.published),
@@ -123,6 +135,7 @@ export default function SiteNav({
       setIsAboutOpen(false);
       setIsAboutClosing(false);
       setIsProjectsOpen(false);
+      setIsContactOpen(false);
 
       if (isCollapsible) {
         setIsExpanded(false);
@@ -140,6 +153,7 @@ export default function SiteNav({
       setIsAboutOpen(false);
       setIsAboutClosing(false);
       setIsProjectsOpen(false);
+      setIsContactOpen(false);
 
       if (isCollapsible) {
         setIsExpanded(false);
@@ -190,6 +204,7 @@ export default function SiteNav({
     setIsAboutOpen(false);
     setIsAboutClosing(false);
     setIsProjectsOpen(false);
+    setIsContactOpen(false);
     onHome?.();
     collapseNav();
   }
@@ -205,8 +220,18 @@ export default function SiteNav({
     setIsAboutOpen(false);
     setIsAboutClosing(false);
     setIsProjectsOpen(false);
+    setIsContactOpen(false);
     onOpenProject?.(projectId);
     collapseNav();
+  }
+
+  function handleContactOpen() {
+    setIsContactOpen(true);
+    onContactSubmitOpen?.();
+  }
+
+  function handleContactClose() {
+    setIsContactOpen(false);
   }
 
   function handleAboutToggle() {
@@ -357,7 +382,14 @@ export default function SiteNav({
         sessionKey={aboutSession}
         theme={theme}
         onCloseRequest={requestAboutClose}
+        onContactRequest={handleContactOpen}
         onClose={finishAboutClose}
+      />
+
+      <ContactFormModal
+        open={isContactOpen}
+        onClose={handleContactClose}
+        theme={theme}
       />
     </div>
   );

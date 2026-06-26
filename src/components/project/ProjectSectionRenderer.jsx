@@ -592,7 +592,128 @@ function StageImageCarousel({ images, caption, captionRich, onExpand }) {
   );
 }
 
-function StageImageSet({ images, carousel = false, caption, captionRich }) {
+function StageStackLayer({ image, isActive, onExpand }) {
+  const [imageError, setImageError] = useState(false);
+  const layout = image.layout ?? 'feature';
+
+  const handleExpand = (event) => {
+    event.stopPropagation();
+    const frame = event.currentTarget.closest('.project-stage__image-frame');
+    const thumbWidth = frame?.getBoundingClientRect().width ?? 0;
+    onExpand?.({ src: image.src, alt: image.alt, thumbWidth });
+  };
+
+  return (
+    <div
+      className={`project-stage__stack-layer ${isActive ? 'is-active' : ''}`}
+      aria-hidden={!isActive}
+    >
+      <figure className={`project-stage__figure project-stage__figure--${layout}`}>
+        <div className="project-stage__image-frame">
+          {imageError ? (
+            <div className="project-stage__image-placeholder">
+              <span>{image.alt || '图片占位'}</span>
+            </div>
+          ) : (
+            <>
+              <img
+                src={image.src}
+                alt={image.alt}
+                loading="lazy"
+                onError={() => setImageError(true)}
+              />
+              {isActive ? (
+                <button
+                  type="button"
+                  className="project-stage__stack-expand"
+                  aria-label={`放大查看：${image.alt || '图片'}`}
+                  onClick={handleExpand}
+                >
+                  ⤢
+                </button>
+              ) : null}
+            </>
+          )}
+        </div>
+      </figure>
+    </div>
+  );
+}
+
+function StageImageStackCarousel({ images, caption, captionRich, onExpand }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const autoplayRef = useRef(null);
+  const count = images.length;
+  const layout = images[0]?.layout ?? 'feature';
+
+  const clearAutoplay = useCallback(() => {
+    if (autoplayRef.current) {
+      window.clearInterval(autoplayRef.current);
+      autoplayRef.current = null;
+    }
+  }, []);
+
+  const startAutoplay = useCallback(() => {
+    clearAutoplay();
+    if (count <= 1) {
+      return;
+    }
+
+    autoplayRef.current = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % count);
+    }, 4500);
+  }, [clearAutoplay, count]);
+
+  const advanceFrame = useCallback(() => {
+    setActiveIndex((index) => (index + 1) % count);
+    startAutoplay();
+  }, [count, startAutoplay]);
+
+  useEffect(() => {
+    startAutoplay();
+    return clearAutoplay;
+  }, [activeIndex, startAutoplay, clearAutoplay]);
+
+  if (count === 0) {
+    return null;
+  }
+
+  return (
+    <div className="project-stage__stack-carousel">
+      <button
+        type="button"
+        className={`project-stage__stack-stage project-stage__stack-stage--${layout}`}
+        aria-label="下一帧"
+        onClick={advanceFrame}
+      >
+        {images.map((image, index) => (
+          <StageStackLayer
+            key={image.src}
+            image={image}
+            isActive={index === activeIndex}
+            onExpand={onExpand}
+          />
+        ))}
+
+        {count > 1 ? (
+          <span className="project-stage__stack-frame" aria-hidden="true">
+            {String(activeIndex + 1).padStart(2, '0')}
+            {' / '}
+            {String(count).padStart(2, '0')}
+          </span>
+        ) : null}
+      </button>
+
+      {captionRich ? (
+        <StageRichCaption blocks={captionRich} />
+      ) : caption ? (
+        <p className="project-stage__carousel-caption">{caption}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function StageImageSet({ images, carousel = false, carouselMode = 'slide', caption, captionRich }) {
   const [lightboxMedia, setLightboxMedia] = useState(null);
 
   if (!images || images.length === 0) {
@@ -600,9 +721,11 @@ function StageImageSet({ images, carousel = false, caption, captionRich }) {
   }
 
   if (carousel && images.length > 1) {
+    const CarouselComponent = carouselMode === 'stack' ? StageImageStackCarousel : StageImageCarousel;
+
     return (
       <>
-        <StageImageCarousel
+        <CarouselComponent
           images={images}
           caption={caption}
           captionRich={captionRich}
@@ -769,6 +892,7 @@ function StageToggleTabPanel({ tab }) {
                       <StageImageSet
                         images={entry.images}
                         carousel={entry.carousel}
+                        carouselMode={entry.carouselMode}
                         caption={entry.caption}
                         captionRich={entry.captionRich}
                       />
@@ -786,11 +910,36 @@ function StageToggleTabPanel({ tab }) {
   );
 }
 
+function scrollToProjectBlock(blockId) {
+  if (!blockId) {
+    return;
+  }
+
+  const block = document.getElementById(blockId);
+  if (!block) {
+    return;
+  }
+
+  block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function SectionStageToggle({ section, sectionIndex }) {
   const tabs = section.tabs ?? [];
   const initialTabId = tabs[0]?.id ?? null;
   const [activeTabId, setActiveTabId] = useState(initialTabId);
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
+
+  const handleTabSelect = (tabId) => {
+    if (tabId === activeTabId) {
+      scrollToProjectBlock(section.id);
+      return;
+    }
+
+    setActiveTabId(tabId);
+    window.requestAnimationFrame(() => {
+      scrollToProjectBlock(section.id);
+    });
+  };
 
   if (!activeTab) {
     return null;
@@ -812,7 +961,7 @@ function SectionStageToggle({ section, sectionIndex }) {
                 className={`project-stage__tab ${tab.id === activeTab.id ? 'is-active' : ''}`}
                 role="tab"
                 aria-selected={tab.id === activeTab.id}
-                onClick={() => setActiveTabId(tab.id)}
+                onClick={() => handleTabSelect(tab.id)}
               >
                 {tab.label}
               </button>

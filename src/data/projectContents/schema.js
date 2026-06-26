@@ -1,5 +1,5 @@
 /**
- * @typedef {'editorial-dream' | 'gallery-first' | 'split-story' | 'timeline-heavy' | 'minimal-case' | 'stage-dual' | 'project-01-editorial'} ProjectLayout
+ * @typedef {'editorial-dream' | 'gallery-first' | 'split-story' | 'timeline-heavy' | 'minimal-case' | 'stage-dual' | 'project-01-editorial' | 'project-02-ortur'} ProjectLayout
  */
 
 /**
@@ -37,7 +37,7 @@
  * @property {string | string[]} [intro]
  * @property {string[]} [paragraphs]
  * @property {{ title?: string, text: string }[]} [steps]
- * @property {{ title?: string, text: string, caption?: string, captionRich?: ({ text: string } | { segments: { type: 'text', value: string }[] | { type: 'link', label: string, href: string }[] | { type: 'doc', label: string, file: string, downloadName: string }[] })[] })[], carousel?: boolean, images?: { src: string, alt: string, caption?: string, mediaType?: 'image'|'video', loop?: boolean, layout?: 'feature'|'split'|'portrait'|'detail' }[] }[]} [entries]
+ * @property {{ title?: string, text: string, caption?: string, captionRich?: ({ text: string } | { segments: { type: 'text', value: string }[] | { type: 'link', label: string, href: string }[] | { type: 'doc', label: string, file: string, downloadName: string }[] })[] })[], carousel?: boolean, carouselMode?: 'slide'|'stack', images?: { src: string, alt: string, caption?: string, mediaType?: 'image'|'video', loop?: boolean, layout?: 'feature'|'split'|'portrait'|'detail' }[] }[]} [entries]
  * @property {{ src: string, alt: string, caption?: string, mediaType?: 'image'|'video', loop?: boolean, layout?: 'feature'|'split'|'portrait'|'detail' }[]} [images]
  */
 /** @typedef {ProjectSectionBase & { type: 'stageToggle', title: string, subtitle?: string, tabs: StageToggleTab[] }} StageToggleSection */
@@ -72,4 +72,5 @@ export const LAYOUT_TYPES = [
   'minimal-case',
   'stage-dual',
   'project-01-editorial',
+  'project-02-ortur',
 ];

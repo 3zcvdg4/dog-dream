@@ -3,3 +3,18 @@ dist
 .vite
 .DS_Store
 *.local
+
+# Local Netlify folder
+.netlify
+
+# Local editor and Python environment
+.vscode/
+.venv/
+
+# Temporary workspace artifacts
+.tmp-*
+.docs/
+inspect_transcript*
+transcript_head.txt
+online_index.html
+cursor-mcp-test.pptx

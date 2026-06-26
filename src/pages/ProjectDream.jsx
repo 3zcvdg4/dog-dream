@@ -1,11 +1,85 @@
+import { useCallback, useEffect } from 'react';
 import { getProjectContent } from '../data/projectContents/index.js';
 import ProjectSectionRenderer from '../components/project/ProjectSectionRenderer.jsx';
+import ProjectOrturCaseStudy, { preloadProjectOrturPriorityAssets } from '../components/project/ProjectOrturCaseStudy.jsx';
+
+const PROJECT_MEDIA_URL_PATTERN = /\.(?:avif|gif|jpe?g|mp4|mov|png|svg|webm|webp)(?:\?.*)?$/i;
+const preloadedProjectMedia = new Set();
+
+function collectProjectMediaUrls(source, results = new Set()) {
+  if (!source) return results;
+
+  if (typeof source === 'string') {
+    const normalized = source.trim();
+
+    if (normalized && !normalized.startsWith('data:') && PROJECT_MEDIA_URL_PATTERN.test(normalized)) {
+      results.add(normalized);
+    }
+
+    return results;
+  }
+
+  if (Array.isArray(source)) {
+    source.forEach((item) => collectProjectMediaUrls(item, results));
+    return results;
+  }
+
+  if (typeof source === 'object') {
+    Object.values(source).forEach((value) => collectProjectMediaUrls(value, results));
+  }
+
+  return results;
+}
+
+function preloadProjectMediaUrl(url) {
+  if (typeof window === 'undefined' || !url || preloadedProjectMedia.has(url)) {
+    return;
+  }
+
+  preloadedProjectMedia.add(url);
+
+  if (/\.(?:mp4|mov|webm)(?:\?.*)?$/i.test(url)) {
+    const video = document.createElement('video');
+    video.preload = 'auto';
+    video.muted = true;
+    video.playsInline = true;
+    video.src = url;
+    video.load();
+    return;
+  }
+
+  const image = new window.Image();
+  image.decoding = 'async';
+  image.src = url;
+}
+
+export function preloadProjectExperience(projectId) {
+  const content = getProjectContent(projectId);
+
+  if (!content) return;
+
+  if (content.layout === 'project-02-ortur') {
+    preloadProjectOrturPriorityAssets(content);
+  }
+
+  collectProjectMediaUrls(content).forEach(preloadProjectMediaUrl);
+}
+
+function scrollToChapter(chapterId) {
+  const block = document.getElementById(chapterId);
+  if (!block) {
+    return;
+  }
+
+  block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
   const content = getProjectContent(project.id);
   const layout = content?.layout ?? 'editorial-dream';
   const sections = content?.sections ?? [];
   const isProject01Editorial = layout === 'project-01-editorial';
+  const isProject02Ortur = layout === 'project-02-ortur';
   const project01EndingParagraphs = [
     '这个网站现在还没有真正完成。它可能永远都不会彻底完成。',
     '因为梦本来就不是静止的。它会继续变化。继续生长。',
@@ -22,19 +96,58 @@ export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
   const bodySections = isProject01Editorial
     ? sections.filter((section) => section.type !== 'intro')
     : sections;
+  const stageChapters = isProject01Editorial
+    ? bodySections
+      .filter((section) => section.type === 'stageToggle')
+      .map((section) => ({ id: section.id, title: section.title }))
+    : [];
+  const handleChapterNavClick = useCallback((chapterId) => {
+    scrollToChapter(chapterId);
+  }, []);
+
+  useEffect(() => {
+    if (isProject02Ortur) {
+      preloadProjectOrturPriorityAssets(content);
+    }
+  }, [content, isProject02Ortur]);
+
+  if (isProject02Ortur) {
+    return (
+      <ProjectOrturCaseStudy
+        project={project}
+        content={content}
+        onBackToCorridor={onBackToCorridor}
+        onWakeUp={onWakeUp}
+      />
+    );
+  }
 
   if (isProject01Editorial) {
     let stageIndex = 0;
 
     return (
       <main className={`project-page page-shell project-page--${layout}`} style={pageStyle}>
-        <header className="project-editorial-nav">
-          <button className="project-editorial-nav__link" type="button" onClick={onBackToCorridor}>回到走廊</button>
-          <div className="project-editorial-nav__meta">
-            <span>Dogdream</span>
-          </div>
-          <button className="project-editorial-nav__link project-editorial-nav__link--ghost" type="button" onClick={onWakeUp}>醒来</button>
-        </header>
+        {stageChapters.length > 0 ? (
+          <nav className="project-editorial-chapters-side" aria-label="篇章导航">
+            <p className="project-editorial-chapters-side__label">篇章</p>
+            <ol className="project-editorial-chapters-side__list">
+              {stageChapters.map((chapter, index) => (
+                <li key={chapter.id}>
+                  <button
+                    type="button"
+                    className="project-editorial-chapters-side__link"
+                    onClick={() => handleChapterNavClick(chapter.id)}
+                  >
+                    <span className="project-editorial-chapters-side__index">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="project-editorial-chapters-side__title">{chapter.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
 
         <section className="project-editorial-hero">
           <div className="project-editorial-hero__heading">
@@ -117,7 +230,7 @@ export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
           </dl>
           <div className="project-actions project-actions--hero">
             <button className="site-button" type="button" onClick={onBackToCorridor}>回到走廊</button>
-            <button className="site-button site-button--ghost" type="button" onClick={onWakeUp}>wake up</button>
+            <button className="site-button site-button--ghost" type="button" onClick={onWakeUp}>醒来</button>
           </div>
         </article>
       </section>
@@ -141,7 +254,7 @@ export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
       <footer className="project-footer">
         <div className="project-actions">
           <button className="site-button" type="button" onClick={onBackToCorridor}>回到走廊</button>
-          <button className="site-button site-button--ghost" type="button" onClick={onWakeUp}>wake up</button>
+          <button className="site-button site-button--ghost" type="button" onClick={onWakeUp}>醒来</button>
         </div>
       </footer>
     </main>

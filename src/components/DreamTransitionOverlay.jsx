@@ -59,6 +59,22 @@ function easeInCubic(value) {
   return value ** 3;
 }
 
+function computeRadialWhiteState(elapsedMs, whiteFillStartMs, whiteFillDurationMs, holdTargetRadius) {
+  const fillProgress = clamp(
+    (elapsedMs - whiteFillStartMs) / Math.max(whiteFillDurationMs, 1),
+    0,
+    1,
+  );
+  const easedProgress = easeInOutSine(fillProgress);
+
+  return {
+    radius: Math.max(48, holdTargetRadius * easedProgress),
+    whiteOpacity: 0.16 + easedProgress * 0.84,
+    glowOpacity: 0.3 - easedProgress * 0.24,
+    glowScale: 0.8 + easedProgress * 0.28,
+  };
+}
+
 function computeWhiteOpacity(elapsedMs, whiteFillStartMs, whiteFillDurationMs) {
   const fillProgress = clamp(
     (elapsedMs - whiteFillStartMs) / whiteFillDurationMs,
@@ -220,6 +236,7 @@ export default function DreamTransitionOverlay({
 }) {
   const canvasRef = useRef(null);
   const whiteLayerRef = useRef(null);
+  const glowLayerRef = useRef(null);
   const animationFrameRef = useRef(0);
   const startedAtRef = useRef(0);
   const revealStartedAtRef = useRef(null);
@@ -239,7 +256,16 @@ export default function DreamTransitionOverlay({
   useEffect(() => {
     const canvas = canvasRef.current;
     const whiteLayer = whiteLayerRef.current;
-    if (!canvas || !whiteLayer) return undefined;
+    const glowLayer = glowLayerRef.current;
+    if (!canvas || !whiteLayer || !glowLayer) return undefined;
+
+    canvas.style.opacity = '1';
+    whiteLayer.style.opacity = '0';
+    whiteLayer.style.clipPath = '';
+    whiteLayer.style.webkitClipPath = '';
+    whiteLayer.style.maskImage = '';
+    whiteLayer.style.webkitMaskImage = '';
+    glowLayer.style.opacity = '0';
 
     if (mode === 'white-fade') {
       canvas.style.opacity = '0';
@@ -274,6 +300,89 @@ export default function DreamTransitionOverlay({
       }
 
       animationFrameRef.current = window.requestAnimationFrame(renderWhiteFadeFrame);
+
+      return () => {
+        window.cancelAnimationFrame(animationFrameRef.current);
+      };
+    }
+
+    if (mode === 'radial-white') {
+      canvas.style.opacity = '0';
+      canvas.width = Math.max(window.innerWidth, 1);
+      canvas.height = Math.max(window.innerHeight, 1);
+      startedAtRef.current = performance.now();
+      revealStartedAtRef.current = null;
+
+      const viewportWidth = Math.max(window.innerWidth, 1);
+      const viewportHeight = Math.max(window.innerHeight, 1);
+      const originX = clamp(origin.x, 0, viewportWidth);
+      const originY = clamp(origin.y, 0, viewportHeight);
+      const maxRadius = Math.hypot(
+        Math.max(originX, viewportWidth - originX),
+        Math.max(originY, viewportHeight - originY),
+      ) + 160;
+
+      whiteLayer.style.setProperty('--dream-transition-origin-x', `${originX}px`);
+      whiteLayer.style.setProperty('--dream-transition-origin-y', `${originY}px`);
+
+      function applySpread(radius, whiteOpacity, glowOpacity, glowScale = 1) {
+        const diameter = Math.max(radius * 2 * glowScale, 72);
+        const featherRadius = clamp(radius * 0.32, 120, 320);
+        const coreRadius = Math.max(0, radius - featherRadius * 0.92);
+        const outerRadius = radius + featherRadius * 0.96;
+        const maskValue = `radial-gradient(circle at ${originX}px ${originY}px, rgba(0, 0, 0, 0.94) 0px, rgba(0, 0, 0, 0.94) ${coreRadius}px, rgba(0, 0, 0, 0.82) ${coreRadius + featherRadius * 0.18}px, rgba(0, 0, 0, 0.58) ${coreRadius + featherRadius * 0.42}px, rgba(0, 0, 0, 0.3) ${coreRadius + featherRadius * 0.66}px, rgba(0, 0, 0, 0.12) ${coreRadius + featherRadius * 0.86}px, rgba(0, 0, 0, 0) ${outerRadius}px)`;
+
+        whiteLayer.style.opacity = `${whiteOpacity}`;
+        whiteLayer.style.clipPath = 'none';
+        whiteLayer.style.webkitClipPath = 'none';
+        whiteLayer.style.maskImage = maskValue;
+        whiteLayer.style.webkitMaskImage = maskValue;
+
+        glowLayer.style.opacity = `${glowOpacity}`;
+        glowLayer.style.left = `${originX}px`;
+        glowLayer.style.top = `${originY}px`;
+        glowLayer.style.width = `${diameter}px`;
+        glowLayer.style.height = `${diameter}px`;
+      }
+
+      function renderRadialFrame(now) {
+        const currentPhase = latestPhaseRef.current;
+        const rawElapsedMs = now - startedAtRef.current;
+        const holdTargetRadius = maxRadius + 220;
+        const radialState = computeRadialWhiteState(
+          rawElapsedMs,
+          whiteFillStartMs,
+          whiteFillDurationMs,
+          holdTargetRadius,
+        );
+
+        if (currentPhase === 'revealing') {
+          if (revealStartedAtRef.current === null) {
+            revealStartedAtRef.current = now;
+          }
+
+          const revealProgress = clamp(
+            (now - revealStartedAtRef.current) / revealDurationMs,
+            0,
+            1,
+          );
+          const easedReveal = easeInOutSine(revealProgress);
+          const opacity = 1 - easedReveal;
+
+          applySpread(holdTargetRadius, opacity, opacity * 0.14, 1.08);
+        } else {
+          applySpread(
+            radialState.radius,
+            radialState.whiteOpacity,
+            radialState.glowOpacity,
+            radialState.glowScale,
+          );
+        }
+
+        animationFrameRef.current = window.requestAnimationFrame(renderRadialFrame);
+      }
+
+      animationFrameRef.current = window.requestAnimationFrame(renderRadialFrame);
 
       return () => {
         window.cancelAnimationFrame(animationFrameRef.current);
@@ -345,6 +454,7 @@ export default function DreamTransitionOverlay({
     <div className={`dream-transition dream-transition--${phase}`} aria-hidden="true">
       <canvas className="dream-transition__canvas" ref={canvasRef} />
       <div className="dream-transition__white" ref={whiteLayerRef} />
+      <div className="dream-transition__glow" ref={glowLayerRef} />
     </div>
   );
 }
