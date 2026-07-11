@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { getProjectContent } from '../data/projectContents/index.js';
 import ProjectSectionRenderer from '../components/project/ProjectSectionRenderer.jsx';
 import ProjectOrturCaseStudy, { preloadProjectOrturPriorityAssets } from '../components/project/ProjectOrturCaseStudy.jsx';
+import ProjectSeerCaseStudy from '../components/project/ProjectSeerCaseStudy.jsx';
 
 const PROJECT_MEDIA_URL_PATTERN = /\.(?:avif|gif|jpe?g|mp4|mov|png|svg|webm|webp)(?:\?.*)?$/i;
 const preloadedProjectMedia = new Set();
@@ -80,6 +81,7 @@ export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
   const sections = content?.sections ?? [];
   const isProject01Editorial = layout === 'project-01-editorial';
   const isProject02Ortur = layout === 'project-02-ortur';
+  const isProject04Seer = layout === 'project-04-seer';
   const project01EndingParagraphs = [
     '这个网站现在还没有真正完成。它可能永远都不会彻底完成。',
     '因为梦本来就不是静止的。它会继续变化。继续生长。',
@@ -114,6 +116,17 @@ export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
   if (isProject02Ortur) {
     return (
       <ProjectOrturCaseStudy
+        project={project}
+        content={content}
+        onBackToCorridor={onBackToCorridor}
+        onWakeUp={onWakeUp}
+      />
+    );
+  }
+
+  if (isProject04Seer) {
+    return (
+      <ProjectSeerCaseStudy
         project={project}
         content={content}
         onBackToCorridor={onBackToCorridor}
@@ -170,7 +183,7 @@ export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
               <strong>{project.role}</strong>
             </div>
             <div>
-              <span>服务</span>
+              <span>负责</span>
               <strong>{project.services}</strong>
             </div>
           </div>

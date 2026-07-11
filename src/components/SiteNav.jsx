@@ -127,6 +127,11 @@ export default function SiteNav({
       const root = rootRef.current;
       if (!root || root.contains(event.target)) return;
 
+      if (isContactOpen) {
+        setIsContactOpen(false);
+        return;
+      }
+
       if (isAboutOpen && !isAboutClosing) {
         requestAboutClose();
         return;
@@ -144,6 +149,11 @@ export default function SiteNav({
 
     function handleKeyDown(event) {
       if (event.key !== 'Escape') return;
+
+      if (isContactOpen) {
+        setIsContactOpen(false);
+        return;
+      }
 
       if (isAboutOpen && !isAboutClosing) {
         requestAboutClose();
@@ -166,7 +176,7 @@ export default function SiteNav({
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [hidden, isCollapsible, isAboutOpen, isAboutClosing, requestAboutClose]);
+  }, [hidden, isCollapsible, isAboutOpen, isAboutClosing, isContactOpen, requestAboutClose]);
 
   function clearCollapseTimer() {
     window.clearTimeout(collapseTimerRef.current);

@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Html, useTexture } from '@react-three/drei';
+import aboutIntroImage from '../../简介.jpg?url';
 import {
   BallCollider,
   CuboidCollider,
@@ -12,7 +13,7 @@ import {
 } from '@react-three/rapier';
 import * as THREE from 'three';
 
-export const ABOUT_LANYARD_INTRO_URL = '/assets/lanyard/about-intro.jpg?v=4';
+export const ABOUT_LANYARD_INTRO_URL = `${aboutIntroImage}?v=20260626-1`;
 
 // ── 卡片尺寸 ──────────────────────────────────────────────
 const CARD_HEIGHT = 3.5;
@@ -50,6 +51,8 @@ const ROPE_COLOR = '#c8c8c8';
 const ROPE_RADIUS = 0.058;
 const PULL_OUT_SPEED = 22;
 const PULL_OUT_DISTANCE = 24;
+const CONTACT_BUTTON_OFFSET_X = 0;
+const CONTACT_BUTTON_OFFSET_Y = -1.53;
 const CLOSE_BUTTON_OFFSET_Y = 0.48;
 const CLOSE_BUTTON_LIFT_REF = { width: 2560, height: 1279, px: 17 };
 const CLOSE_BUTTON_LIFT_WORLD_AT_REF = 0.085;
@@ -157,7 +160,7 @@ function LanyardCloseButton({
       <Html
         transform
         distanceFactor={distanceFactor}
-        position={[0, CARD_HEIGHT / 2 - 0.38 + liftWorld, 0.06]}
+        position={[CONTACT_BUTTON_OFFSET_X, CONTACT_BUTTON_OFFSET_Y + liftWorld, 0.06]}
         center
         zIndexRange={[100, 0]}
         style={{ pointerEvents: 'auto' }}
@@ -171,7 +174,10 @@ function LanyardCloseButton({
             onContactRequest?.();
           }}
         >
-          联系我
+          <span className="about-lanyard__contact-copy">
+            联系我
+            <span className="about-lanyard__contact-arrow" aria-hidden="true">→</span>
+          </span>
         </button>
       </Html>
 

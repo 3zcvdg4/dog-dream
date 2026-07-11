@@ -53,6 +53,7 @@ const HOME_IDLE_VIDEO_URLS = [HOME_WAKE_VIDEO_SOURCES, HOME_SLEEP_VIDEO_SOURCES]
 function resolveProjectNavTheme(projectId) {
   const layout = getProjectContent(projectId)?.layout;
   if (layout === 'project-02-ortur') return 'ortur';
+  if (layout === 'project-04-seer') return 'seer';
   if (layout === 'project-01-editorial') return 'editorial';
   return 'light';
 }

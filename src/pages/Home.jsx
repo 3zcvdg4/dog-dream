@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import walkVideo from '../../walk-ffmpeg-1.webm?url';
+import walkVideo from '../../walk-ffmpeg-2.webm?url';
 import wakeupVideo from '../../wakeup-ffmpeg-1.webm?url';
 import sleepVideo from '../../sleep-ffmpeg-1.webm?url';
 import dreamBubbleImage from '../../Dream Bubble-2.png?url';

@@ -1,5 +1,5 @@
 /**
- * @typedef {'editorial-dream' | 'gallery-first' | 'split-story' | 'timeline-heavy' | 'minimal-case' | 'stage-dual' | 'project-01-editorial' | 'project-02-ortur'} ProjectLayout
+ * @typedef {'editorial-dream' | 'gallery-first' | 'split-story' | 'timeline-heavy' | 'minimal-case' | 'stage-dual' | 'project-01-editorial' | 'project-02-ortur' | 'project-04-seer'} ProjectLayout
  */
 
 /**
@@ -73,4 +73,5 @@ export const LAYOUT_TYPES = [
   'stage-dual',
   'project-01-editorial',
   'project-02-ortur',
+  'project-04-seer',
 ];

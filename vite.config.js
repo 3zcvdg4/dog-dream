@@ -8,6 +8,7 @@ const posterSourceDir = path.resolve(__dirname, 'poster');
 const posterDevRoute = '/__poster';
 const posterBuildDirName = 'poster';
 const contentWorkspaceDir = path.resolve(__dirname, '../网站/三级页面项目合集');
+const workerSourceFile = path.resolve(__dirname, '_worker.js');
 
 const posterMimeTypes = {
   '.avif': 'image/avif',
@@ -34,6 +35,14 @@ const copyPosterDirectoryToDist = async (distDir) => {
   const targetDir = path.join(distDir, posterBuildDirName);
   await fsp.rm(targetDir, { recursive: true, force: true });
   await fsp.cp(posterSourceDir, targetDir, { recursive: true });
+};
+
+const copyWorkerFileToDist = async (distDir) => {
+  if (!fs.existsSync(workerSourceFile)) {
+    return;
+  }
+
+  await fsp.copyFile(workerSourceFile, path.join(distDir, '_worker.js'));
 };
 
 const posterRuntimePlugin = () => {
@@ -113,6 +122,7 @@ const posterRuntimePlugin = () => {
     },
     async closeBundle() {
       await copyPosterDirectoryToDist(distDir);
+      await copyWorkerFileToDist(distDir);
     },
   };
 };
