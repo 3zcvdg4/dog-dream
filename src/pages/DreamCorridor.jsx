@@ -3145,7 +3145,13 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
           <div className="focus-copy__panel">
             <div className="focus-copy__body">
               <h2>{focusedProject.title}</h2>
-              <p className="focus-copy__summary">{focusedProject.summary}</p>
+              <div className="focus-copy__summary">
+                {typeof focusedProject.summary === 'string'
+                  ? focusedProject.summary.split('\n').filter(Boolean).map((line) => (
+                    <p key={line} className="focus-copy__summary-line">{line}</p>
+                  ))
+                  : null}
+              </div>
             </div>
 
             <div className="focus-actions">

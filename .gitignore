@@ -18,6 +18,7 @@ inspect_transcript*
 transcript_head.txt
 online_index.html
 cursor-mcp-test.pptx
+dist.zip
 
 # Local-only backup snapshots and sync helpers
 scripts/

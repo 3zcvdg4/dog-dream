@@ -3,6 +3,7 @@ import { getProjectContent } from '../data/projectContents/index.js';
 import ProjectSectionRenderer from '../components/project/ProjectSectionRenderer.jsx';
 import ProjectOrturCaseStudy, { preloadProjectOrturPriorityAssets } from '../components/project/ProjectOrturCaseStudy.jsx';
 import ProjectSeerCaseStudy from '../components/project/ProjectSeerCaseStudy.jsx';
+import ProjectParallaxCaseStudy from '../components/project/ProjectParallaxCaseStudy.jsx';
 
 const PROJECT_MEDIA_URL_PATTERN = /\.(?:avif|gif|jpe?g|mp4|mov|png|svg|webm|webp)(?:\?.*)?$/i;
 const preloadedProjectMedia = new Set();
@@ -75,12 +76,13 @@ function scrollToChapter(chapterId) {
   block.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
+export default function ProjectDream({ project, dreamLayoutReady = true, onBackToCorridor, onWakeUp }) {
   const content = getProjectContent(project.id);
   const layout = content?.layout ?? 'editorial-dream';
   const sections = content?.sections ?? [];
   const isProject01Editorial = layout === 'project-01-editorial';
   const isProject02Ortur = layout === 'project-02-ortur';
+  const isProject03Parallax = layout === 'project-03-parallax';
   const isProject04Seer = layout === 'project-04-seer';
   const project01EndingParagraphs = [
     '这个网站现在还没有真正完成。它可能永远都不会彻底完成。',
@@ -118,6 +120,18 @@ export default function ProjectDream({ project, onBackToCorridor, onWakeUp }) {
       <ProjectOrturCaseStudy
         project={project}
         content={content}
+        onBackToCorridor={onBackToCorridor}
+        onWakeUp={onWakeUp}
+      />
+    );
+  }
+
+  if (isProject03Parallax) {
+    return (
+      <ProjectParallaxCaseStudy
+        project={project}
+        content={content}
+        dreamLayoutReady={dreamLayoutReady}
         onBackToCorridor={onBackToCorridor}
         onWakeUp={onWakeUp}
       />

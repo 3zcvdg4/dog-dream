@@ -274,7 +274,13 @@ function SeerStoryHeader({ label, lead, detail }) {
   return (
     <header className="seer-story-head">
       {label ? <p className="seer-story-head__label">{label}</p> : null}
-      {lead ? <p className="seer-story-head__lead">{lead}</p> : null}
+      {lead ? (
+        <p className="seer-story-head__lead">
+          {lead.split('\n').map((line) => (
+            <span key={line} className="seer-story-head__lead-line">{line}</span>
+          ))}
+        </p>
+      ) : null}
       {detail ? <p className="seer-story-head__detail">{detail}</p> : null}
     </header>
   );
@@ -735,6 +741,119 @@ function SeerHorizontalPinSection({ section }) {
   );
 }
 
+function SeerPackagingSection({ section }) {
+  const items = section.packagingItems ?? [];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [imageFailed, setImageFailed] = useState(false);
+  const activeItem = items[activeIndex] ?? items[0];
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [activeIndex, activeItem?.image]);
+
+  if (!activeItem) {
+    return null;
+  }
+
+  const goPrev = () => {
+    setActiveIndex((index) => (index - 1 + items.length) % items.length);
+  };
+
+  const goNext = () => {
+    setActiveIndex((index) => (index + 1) % items.length);
+  };
+
+  return (
+    <section
+      id={section.id}
+      className="seer-packaging seer-packaging--light"
+    >
+      <div className="seer-packaging__inner">
+        <SeerStoryHeader
+          label={section.label}
+          lead={section.lead}
+          detail={section.detail}
+        />
+
+        <div className="seer-packaging__card">
+          <div className="seer-packaging__main">
+            <div className="seer-packaging__left">
+              <div className="seer-packaging__preview">
+                {activeItem.image && !imageFailed ? (
+                  <img
+                    key={activeItem.id}
+                    src={activeItem.image}
+                    alt={activeItem.alt ?? activeItem.title ?? ''}
+                    className="seer-packaging__preview-image"
+                    loading="lazy"
+                    decoding="async"
+                    draggable={false}
+                    onError={() => setImageFailed(true)}
+                  />
+                ) : (
+                  <div className="seer-packaging__preview-placeholder">
+                    <span className="seer-packaging__preview-title">
+                      {activeItem.previewTitle ?? activeItem.title}
+                    </span>
+                    <small className="seer-packaging__preview-hint">
+                      {activeItem.previewHint ?? '这里放包装盒效果图'}
+                    </small>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="seer-packaging__right">
+              <p className="seer-story-head__label">{section.label ?? 'Packaging'}</p>
+              <h3 className="seer-packaging__item-title">{activeItem.title}</h3>
+              <p className="seer-packaging__item-type">{activeItem.type}</p>
+
+              {activeItem.info?.length ? (
+                <dl className="seer-packaging__info">
+                  {activeItem.info.map((entry) => (
+                    <div key={entry.label}>
+                      <dt>{entry.label}</dt>
+                      <dd>{entry.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+
+              <div className="seer-packaging__space" aria-hidden="true" />
+            </div>
+          </div>
+
+          <div className="seer-packaging__bottom">
+            <div className="seer-packaging__tabs" role="tablist" aria-label="包装物料">
+              {items.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={index === activeIndex}
+                  className={`seer-packaging__tab${index === activeIndex ? ' is-active' : ''}`}
+                  onClick={() => setActiveIndex(index)}
+                >
+                  {item.tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="seer-packaging__buttons">
+              <button type="button" className="seer-packaging__button" onClick={goPrev}>
+                ← 上一项
+              </button>
+              <button type="button" className="seer-packaging__button" onClick={goNext}>
+                下一项 →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SeerGallerySection({ section }) {
   const toneClass = section.theme === 'light' ? 'seer-block--light' : 'seer-block--dark';
   const layoutClass = section.layout ? ` seer-block--${section.layout}` : '';
@@ -818,29 +937,62 @@ function SeerProcessSection({ stories }) {
   );
 }
 
-function SeerClosingSection({ closing }) {
+function SeerClosingSection({ closing, onBackToCorridor }) {
   return (
-    <section className="seer-block seer-block--light seer-block--closing" id="seer-closing">
-      <SeerSectionInner>
-        <div className="seer-closing-layout">
-          {closing.visual ? (
-            <div className="seer-closing-layout__visual">
-              <SeerImageSlot item={closing.visual} />
+    <section className="seer-closing" id="seer-closing">
+      <div className="seer-closing__glow" aria-hidden="true" />
+
+      {closing.chapterNumber ? (
+        <div className="seer-closing__chapter" aria-hidden="true">{closing.chapterNumber}</div>
+      ) : null}
+
+      <div className="seer-closing__center">
+        <div className="seer-closing__panel">
+          {closing.label ? <p className="seer-closing__label">{closing.label}</p> : null}
+
+          {closing.brand ? <p className="seer-closing__brand">{closing.brand}</p> : null}
+
+          {closing.title ? (
+            <h2 className="seer-closing__title">{closing.title}</h2>
+          ) : null}
+
+          {closing.descriptionLines?.length ? (
+            <p className="seer-closing__desc">
+              {closing.descriptionLines.map((line, index) => (
+                <span key={line}>
+                  {line}
+                  {index < closing.descriptionLines.length - 1 ? <br /> : null}
+                </span>
+              ))}
+            </p>
+          ) : null}
+
+          {closing.systemItems?.length ? (
+            <div className="seer-closing__system" aria-label="项目系统范围">
+              {closing.systemItems.map((item) => (
+                <span key={item} className="seer-closing__item">{item}</span>
+              ))}
             </div>
           ) : null}
-          <div className="seer-closing-layout__copy">
-            <SeerSectionHeader label={closing.label} title={closing.title} />
-            <SeerParagraphs paragraphs={closing.paragraphs} />
-            {closing.tags?.length ? (
-              <ul className="seer-closing-tags">
-                {closing.tags.map((tag) => (
-                  <li key={tag}>{tag}</li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
         </div>
-      </SeerSectionInner>
+      </div>
+
+      {onBackToCorridor ? (
+        <button
+          className="seer-closing__back"
+          type="button"
+          onClick={onBackToCorridor}
+        >
+          <span className="seer-closing__back-arrow" aria-hidden="true">←</span>
+          <span className="seer-closing__back-label">{closing.backLabel ?? '回到走廊'}</span>
+        </button>
+      ) : null}
+
+      {closing.sideText ? (
+        <div className="seer-closing__footer">
+          <p className="seer-closing__side">{closing.sideText}</p>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1123,18 +1275,19 @@ function SeerHeroScrollScene({ hero, overview, children }) {
   );
 }
 
-export default function ProjectSeerCaseStudy({ content }) {
+export default function ProjectSeerCaseStudy({ content, onBackToCorridor }) {
   const navItems = useMemo(() => (
     [
-      { id: 'seer-overview', label: '项目概述' },
+      { id: 'top', label: 'Hero' },
+      { id: 'seer-overview', label: content.overview?.navLabel ?? content.overview?.label ?? '项目概述' },
       ...(content.streams ?? []).map((stream) => ({
         id: stream.id,
         label: stream.navLabel ?? stream.kicker,
       })),
-      { id: 'seer-stories', label: '设计过程' },
-      { id: 'seer-closing', label: '最终成果' },
+      ...(content.stories ? [{ id: 'seer-stories', label: content.stories?.navLabel ?? content.stories?.label ?? '关键判断' }] : []),
+      { id: 'seer-closing', label: content.closing?.navLabel ?? content.closing?.label ?? '结束' },
     ]
-  ), [content.streams]);
+  ), [content]);
 
   if (!content?.hero) {
     return (
@@ -1155,6 +1308,8 @@ export default function ProjectSeerCaseStudy({ content }) {
               <SeerStickyTabsSection key={section.id} section={section} />
             ) : section.layout === 'horizontal-pin' ? (
               <SeerHorizontalPinSection key={section.id} section={section} />
+            ) : section.layout === 'packaging' ? (
+              <SeerPackagingSection key={section.id} section={section} />
             ) : (
               <SeerGallerySection key={section.id} section={section} />
             )
@@ -1165,7 +1320,7 @@ export default function ProjectSeerCaseStudy({ content }) {
           ) : null}
 
           {content.closing ? (
-            <SeerClosingSection closing={content.closing} />
+            <SeerClosingSection closing={content.closing} onBackToCorridor={onBackToCorridor} />
           ) : null}
         </div>
       </SeerHeroScrollScene>

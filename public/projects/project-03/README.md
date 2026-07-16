@@ -1,3 +1,8 @@
 ﻿# project-03 配图目录
 
-三级页运行时引用的图片请放在此目录，例如 /projects/project-03/hero.jpg。
+运行时资源：
+
+- `/projects/project-03/fstar.png` — 流星贴图（SVG 引用）
+- `/projects/project-03/parallax.svg` — 场景 SVG 备份（组件内以 `?raw` 引入）
+
+正式项目素材替换后，请更新上述文件，并同步 `三级页面项目合集/project-03/`。
