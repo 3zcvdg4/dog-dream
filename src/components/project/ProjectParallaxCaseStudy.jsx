@@ -18,7 +18,11 @@ function svgHasLayout(svg) {
   }
 }
 
-export default function ProjectParallaxCaseStudy({ project, dreamLayoutReady = true }) {
+export default function ProjectParallaxCaseStudy({
+  project,
+  dreamLayoutReady = true,
+  onBackToCorridor,
+}) {
   const pageRef = useRef(null);
   const sceneRootRef = useRef(null);
   const sceneStageRef = useRef(null);
@@ -153,7 +157,9 @@ export default function ProjectParallaxCaseStudy({ project, dreamLayoutReady = t
             <header id="brand-intro-actor" className="page-section__head page-section__head--intro">
               <p className="page-section__eyebrow">{INTRO_COPY.eyebrow}</p>
               <h2 className="page-section__title">{INTRO_COPY.title}</h2>
-              <p className="page-section__lead">{INTRO_COPY.lead}</p>
+              {INTRO_COPY.lead.map((paragraph) => (
+                <p key={paragraph} className="page-section__lead">{paragraph}</p>
+              ))}
             </header>
           </div>
         </div>
@@ -162,7 +168,7 @@ export default function ProjectParallaxCaseStudy({ project, dreamLayoutReady = t
         <div className="scroll-intro" aria-hidden="true" />
         <div className="scroll-dwell" aria-hidden="true" />
       </div>
-      <ParallaxScrollSections />
+      <ParallaxScrollSections project={project} onBackToCorridor={onBackToCorridor} />
     </main>
   );
 }

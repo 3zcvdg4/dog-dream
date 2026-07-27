@@ -109,6 +109,14 @@ function readRouteFromLocation() {
   const resolvedProject = route.projectSlug
     ? projectBySlug.get(route.projectSlug) ?? projectById.get(route.projectSlug)
     : null;
+  const canOpenProject = resolvedProject?.published !== false;
+
+  if (route.view === ROUTE_PROJECT && !canOpenProject) {
+    return {
+      view: ROUTE_CORRIDOR,
+      projectId: projects.find((project) => project.published)?.id ?? projects[0].id,
+    };
+  }
 
   return {
     view: route.view,
@@ -731,6 +739,11 @@ export default function App() {
   async function startProjectEntryTransition(projectId, corridorState, origin) {
     if (dreamTransition.phase !== 'idle') return;
 
+    const targetProject = projects.find((project) => project.id === projectId);
+    if (!targetProject || targetProject.published === false) {
+      return;
+    }
+
     const viewportWidth = window.innerWidth || 1;
     const viewportHeight = window.innerHeight || 1;
     const transitionOrigin = {
@@ -818,6 +831,11 @@ export default function App() {
 
   function openProjectFromNav(projectId) {
     if (!projectId || (projectId === activeProjectId && view === ROUTE_PROJECT)) {
+      return;
+    }
+
+    const targetProject = projects.find((project) => project.id === projectId);
+    if (!targetProject || targetProject.published === false) {
       return;
     }
 

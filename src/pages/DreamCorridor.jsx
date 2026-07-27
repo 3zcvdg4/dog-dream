@@ -2,6 +2,7 @@ import { useTexture } from '@react-three/drei';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import DreamPendingNotice from '../components/DreamPendingNotice.jsx';
 import FramePortal from '../components/FramePortal.jsx';
 import SteamField from '../components/SteamField.jsx';
 import { projects } from '../data/projects.js';
@@ -2717,8 +2718,10 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
   const [smokeSettings, setSmokeSettings] = useState(() => loadGroundSmokeSettings());
   const [waveSettings, setWaveSettings] = useState(() => loadSurfaceWaveSettings());
   const [focusedLightDebug, setFocusedLightDebug] = useState(FOCUSED_LIGHT_DEBUG_DEFAULTS);
+  const [dreamPendingNoticeVisible, setDreamPendingNoticeVisible] = useState(false);
   const pawTimerRef = useRef(null);
   const focusCopyRevealTimerRef = useRef(null);
+  const dreamPendingNoticeTimerRef = useRef(null);
   const lastScrollTimeRef = useRef(0);
   const smoothedVelocityRef = useRef(0);
   const pawHoldMsRef = useRef(520);
@@ -2869,6 +2872,7 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
   useEffect(() => () => {
     window.clearTimeout(pawTimerRef.current);
     window.clearTimeout(focusCopyRevealTimerRef.current);
+    window.clearTimeout(dreamPendingNoticeTimerRef.current);
     window.cancelAnimationFrame(wheelFrameRef.current);
     window.cancelAnimationFrame(returnToRoamFrameRef.current);
   }, []);
@@ -2876,6 +2880,11 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
   useEffect(() => {
     preloadFocusCardBackground();
   }, []);
+
+  useEffect(() => {
+    window.clearTimeout(dreamPendingNoticeTimerRef.current);
+    setDreamPendingNoticeVisible(false);
+  }, [focusTargetProject?.frameKey]);
 
   useEffect(() => {
     window.clearTimeout(focusCopyRevealTimerRef.current);
@@ -3057,25 +3066,36 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
     focusedProjectScreenOriginRef.current = position;
   }, []);
 
-  const handleEnterDeepDream = useCallback(() => {
-    if (!focusedProject) return;
+  const showUnpublishedDreamNotice = useCallback(() => {
+    window.clearTimeout(dreamPendingNoticeTimerRef.current);
+    setDreamPendingNoticeVisible(true);
+  }, []);
 
-    onEnterProject(focusedProject.id, {
-      targetZ: targetZRef.current,
-      focusedProject,
-    }, focusedProjectScreenOriginRef.current);
-  }, [focusedProject, onEnterProject]);
-
-  const handleEnterFocusedPosterProject = useCallback((project) => {
+  const tryEnterProject = useCallback((project) => {
     if (!project) return;
+
+    if (project.published === false) {
+      showUnpublishedDreamNotice();
+      return;
+    }
 
     onEnterProject(project.id, {
       targetZ: targetZRef.current,
       focusedProject: project,
     }, focusedProjectScreenOriginRef.current);
-  }, [onEnterProject]);
+  }, [onEnterProject, showUnpublishedDreamNotice]);
+
+  const handleEnterDeepDream = useCallback(() => {
+    tryEnterProject(focusedProject);
+  }, [focusedProject, tryEnterProject]);
+
+  const handleEnterFocusedPosterProject = useCallback((project) => {
+    tryEnterProject(project);
+  }, [tryEnterProject]);
 
   const handleReturnToCorridor = useCallback(() => {
+    window.clearTimeout(dreamPendingNoticeTimerRef.current);
+    setDreamPendingNoticeVisible(false);
     setFocusTargetProject(null);
     setFocusedProject(null);
   }, []);
@@ -3155,7 +3175,16 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
             </div>
 
             <div className="focus-actions">
-              <button className="focus-action focus-action--primary" type="button" onClick={handleEnterDeepDream}>
+              <button
+                className={[
+                  'focus-action',
+                  'focus-action--primary',
+                  focusedProject.published === false ? 'focus-action--pending' : '',
+                ].filter(Boolean).join(' ')}
+                type="button"
+                onClick={handleEnterDeepDream}
+                aria-describedby={focusedProject.published === false ? 'unpublished-dream-notice' : undefined}
+              >
                 <span className="focus-action__icon focus-action__icon--enter" aria-hidden="true" />
                 <span className="focus-action__label">进入深梦</span>
               </button>
@@ -3168,6 +3197,11 @@ export default function DreamCorridor({ initialState, smokePreset, onConsumeSmok
           </div>
         </aside>
       )}
+
+      <DreamPendingNotice
+        visible={dreamPendingNoticeVisible}
+        onReturnToCorridor={handleReturnToCorridor}
+      />
 
       <button className="site-button wake-button" type="button" onClick={onWakeUp}>醒来</button>
     </main>

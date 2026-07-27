@@ -142,7 +142,7 @@ export function initParallaxScroll(root, scroller) {
     scene2.fromTo(q('#h2-5-actor'), { x: -150 }, { x: 0 }, 0.1);
     scene2.fromTo(q('#h2-6-actor'), { x: 175 }, { x: 0 }, 0.1);
 
-    /* Bats */
+    /* Bats / storyboard — settle before scene2→3 transition */
     gsap.set(q('#bats'), { transformOrigin: '50% 50%' });
     gsap.fromTo(
       q('#bats'),
@@ -154,19 +154,9 @@ export function initParallaxScroll(root, scroller) {
         scrollTrigger: {
           ...stBase,
           start: '40% top',
-          end: '70% 100%',
+          end: '60% 100%',
           scrub: 3,
           onEnter() {
-            gsap.utils.toArray(q('#bats path')).forEach((item, i) => {
-              gsap.to(item, {
-                scaleX: 0.5,
-                yoyo: true,
-                repeat: 9,
-                transformOrigin: '50% 50%',
-                duration: 0.15,
-                delay: 0.7 + i / 10,
-              });
-            });
             gsap.set(q('#bats'), { opacity: 1 });
           },
         },
@@ -184,8 +174,11 @@ export function initParallaxScroll(root, scroller) {
       end: 'bottom 100%',
       scrub: 3,
     });
+    // Keep storyboard rising with the person (same y delta as sunActor).
+    const batsExitY = 20 + (sunActorY(-80) - sunActorY(330));
     sceneTransition.to(q('#h2-1'), { y: -height - 100, scale: 1.5, transformOrigin: '50% 50%' }, 0);
     sceneTransition.to(q('#sunActor'), { y: sunActorY(-80) }, 0);
+    sceneTransition.to(q('#bats'), { y: batsExitY }, 0);
     sceneTransition.to(q('#bg2'), { y: 0 }, 0);
 
     /* Scene 3 */

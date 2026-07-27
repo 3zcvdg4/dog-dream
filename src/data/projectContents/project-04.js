@@ -13,7 +13,7 @@ export default {
   overview: {
     navLabel: 'Overview',
     label: 'Overview',
-    role: '品牌设计 / 视觉设计',
+    role: '品牌设计师',
     paragraphs: [
       'Seer 500 是一个围绕产品上市展开的品牌视觉项目。',
       '我主要负责品牌视觉系统的建立与落地，覆盖渠道页面、传播视觉、包装物料以及数字触点，让不同阶段出现的内容都能保持统一表达。',

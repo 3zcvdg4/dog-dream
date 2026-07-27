@@ -104,6 +104,7 @@ function createVideoScrubber(videoRef, durationRef, readyRef) {
 }
 
 const REVEAL_CONTACT = 0.72;
+const POST_READY_REFRESH_MS = [0, 50, 200, 600];
 
 function getSeerHeroScrollRatio(root) {
   const raw = getComputedStyle(root ?? document.documentElement)
@@ -132,13 +133,14 @@ function getScrollTransforms(revealProgress) {
   };
 }
 
-function SeerTypewriter({ lines, speed = 68 }) {
+function SeerTypewriter({ lines, speed = 68, active = true }) {
   const [lineIndex, setLineIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [done, setDone] = useState(false);
   const [fontsReady, setFontsReady] = useState(false);
   const safeLines = lines?.length ? lines : SEER_DEFAULT_TITLE_LINES;
   const label = safeLines.join(' ');
+  const canType = active && fontsReady;
 
   useEffect(() => {
     let cancelled = false;
@@ -166,17 +168,17 @@ function SeerTypewriter({ lines, speed = 68 }) {
   }, []);
 
   useEffect(() => {
-    if (!fontsReady) {
+    if (!active) {
       return undefined;
     }
 
     setLineIndex(0);
     setCharIndex(0);
     setDone(false);
-  }, [fontsReady, safeLines]);
+  }, [active, safeLines]);
 
   useEffect(() => {
-    if (!fontsReady || done) {
+    if (!canType || done) {
       return undefined;
     }
 
@@ -197,7 +199,7 @@ function SeerTypewriter({ lines, speed = 68 }) {
     }, speed);
 
     return () => window.clearTimeout(timer);
-  }, [charIndex, done, fontsReady, lineIndex, safeLines, speed]);
+  }, [canType, charIndex, done, lineIndex, safeLines, speed]);
 
   return (
     <h1 className="seer-hero__title" aria-label={label}>
@@ -209,7 +211,7 @@ function SeerTypewriter({ lines, speed = 68 }) {
 
       <span className="seer-hero__title-live" aria-hidden="true">
         {safeLines.map((line, index) => {
-          const visibleChars = !fontsReady
+          const visibleChars = !canType
             ? ''
             : index < lineIndex
               ? line
@@ -220,7 +222,7 @@ function SeerTypewriter({ lines, speed = 68 }) {
           return (
             <span key={`live-${line}`} className="seer-hero__title-line">
               {visibleChars}
-              {fontsReady && !done && index === lineIndex ? (
+              {canType && !done && index === lineIndex ? (
                 <span className="seer-hero__cursor">|</span>
               ) : null}
             </span>
@@ -1011,7 +1013,7 @@ function SeerSectionNav({ items }) {
   );
 }
 
-function SeerHeroScrollScene({ hero, overview, children }) {
+function SeerHeroScrollScene({ hero, overview, children, dreamLayoutReady = true }) {
   const sceneRef = useRef(null);
   const videoRef = useRef(null);
   const revealRef = useRef(null);
@@ -1021,12 +1023,15 @@ function SeerHeroScrollScene({ hero, overview, children }) {
   const durationRef = useRef(0);
   const videoReadyRef = useRef(false);
   const scrubVideoRef = useRef(null);
+  const dreamLayoutReadyRef = useRef(dreamLayoutReady);
   const metricsRef = useRef({
     videoRevealScroll: 1,
     overviewOverflow: 0,
     viewportHeight: 1,
   });
   const [videoReady, setVideoReady] = useState(false);
+
+  dreamLayoutReadyRef.current = dreamLayoutReady;
 
   useEffect(() => {
     scrubVideoRef.current = createVideoScrubber(videoRef, durationRef, videoReadyRef);
@@ -1057,6 +1062,10 @@ function SeerHeroScrollScene({ hero, overview, children }) {
   }, []);
 
   const updateScene = useCallback(() => {
+    if (!dreamLayoutReadyRef.current) {
+      return;
+    }
+
     const scene = sceneRef.current;
     const reveal = revealRef.current;
     const revealContent = revealContentRef.current;
@@ -1107,10 +1116,56 @@ function SeerHeroScrollScene({ hero, overview, children }) {
     }
   }, []);
 
+  useLayoutEffect(() => {
+    if (!dreamLayoutReady) {
+      return undefined;
+    }
+
+    const scene = sceneRef.current;
+    if (!scene) {
+      return undefined;
+    }
+
+    const scrollRoot = scene.closest('.project-page');
+    const video = videoRef.current;
+    const timers = [];
+
+    if (scrollRoot) {
+      scrollRoot.scrollTop = 0;
+    }
+
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+    }
+
+    syncSceneMetrics();
+    updateScene();
+
+    window.requestAnimationFrame(() => {
+      if (scrollRoot) {
+        scrollRoot.scrollTop = 0;
+      }
+      syncSceneMetrics();
+      updateScene();
+    });
+
+    POST_READY_REFRESH_MS.forEach((ms) => {
+      timers.push(window.setTimeout(() => {
+        syncSceneMetrics();
+        updateScene();
+      }, ms));
+    });
+
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+    };
+  }, [dreamLayoutReady, syncSceneMetrics, updateScene]);
+
   useEffect(() => {
     const scene = sceneRef.current;
     const revealContent = revealContentRef.current;
-    if (!scene) {
+    if (!scene || !dreamLayoutReady) {
       return undefined;
     }
 
@@ -1150,14 +1205,16 @@ function SeerHeroScrollScene({ hero, overview, children }) {
         window.cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [syncSceneMetrics, updateScene]);
+  }, [dreamLayoutReady, syncSceneMetrics, updateScene]);
 
   useEffect(() => {
-    if (overview) {
-      syncSceneMetrics();
-      updateScene();
+    if (!dreamLayoutReady || !overview) {
+      return undefined;
     }
-  }, [overview, syncSceneMetrics, updateScene]);
+
+    syncSceneMetrics();
+    updateScene();
+  }, [dreamLayoutReady, overview, syncSceneMetrics, updateScene]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -1232,7 +1289,10 @@ function SeerHeroScrollScene({ hero, overview, children }) {
         <div className="seer-hero-scene__sticky">
           <section ref={heroRef} className="seer-hero" id="top" aria-label="SEER 500 主视觉">
             <div className="seer-hero__copy">
-              <SeerTypewriter lines={hero.typedTitleLines ?? SEER_DEFAULT_TITLE_LINES} />
+              <SeerTypewriter
+                lines={hero.typedTitleLines ?? SEER_DEFAULT_TITLE_LINES}
+                active={dreamLayoutReady}
+              />
               {hero.subtitle ? (
                 <p className="seer-hero__subtitle">{hero.subtitle}</p>
               ) : null}
@@ -1275,7 +1335,7 @@ function SeerHeroScrollScene({ hero, overview, children }) {
   );
 }
 
-export default function ProjectSeerCaseStudy({ content, onBackToCorridor }) {
+export default function ProjectSeerCaseStudy({ content, onBackToCorridor, dreamLayoutReady = true }) {
   const navItems = useMemo(() => (
     [
       { id: 'top', label: 'Hero' },
@@ -1298,10 +1358,14 @@ export default function ProjectSeerCaseStudy({ content, onBackToCorridor }) {
   }
 
   return (
-    <main className="project-page page-shell project-page--project-04-seer">
+    <main className={`project-page page-shell project-page--project-04-seer${dreamLayoutReady ? '' : ' is-dream-entry-pending'}`}>
       <SeerSectionNav items={navItems} />
 
-      <SeerHeroScrollScene hero={content.hero} overview={content.overview}>
+      <SeerHeroScrollScene
+        hero={content.hero}
+        overview={content.overview}
+        dreamLayoutReady={dreamLayoutReady}
+      >
         <div className="seer-body">
           {content.streams?.map((section) => (
             section.layout === 'sticky-tabs' ? (

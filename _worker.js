@@ -400,6 +400,15 @@ export default {
       return handleContactRequest(request, env);
     }
 
-    return env.ASSETS.fetch(request);
+    // SPA fallback: try serving the requested path, fall back to index.html for client-side routing
+    try {
+      const assetResponse = await env.ASSETS.fetch(request);
+      if (assetResponse.status === 404 && !url.pathname.includes('.')) {
+        return env.ASSETS.fetch(new Request(new URL('/index.html', request.url), request));
+      }
+      return assetResponse;
+    } catch {
+      return env.ASSETS.fetch(new Request(new URL('/index.html', request.url), request));
+    }
   },
 };

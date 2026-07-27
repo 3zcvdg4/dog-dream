@@ -12,15 +12,21 @@
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
     "@react-three/rapier": "^2.2.0",
+    "@use-gesture/react": "^10.3.1",
     "@vitejs/plugin-react": "latest",
     "gsap": "^3.15.0",
     "html2canvas": "^1.4.1",
     "meshline": "^3.3.1",
     "motion": "^12.40.0",
     "ogl": "^1.0.11",
+    "page-flip": "^2.0.7",
     "react": "latest",
     "react-dom": "latest",
+    "react-pageflip": "^2.0.3",
     "three": "latest",
     "vite": "latest"
+  },
+  "devDependencies": {
+    "wrangler": "^4.114.0"
   }
 }

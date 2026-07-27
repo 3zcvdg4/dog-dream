@@ -1375,6 +1375,19 @@ export default function ProjectOrturCaseStudy({ project, content, onBackToCorrid
             ))}
           </div>
         ) : null}
+
+        {onBackToCorridor ? (
+          <div className="ortur-impact__actions">
+            <button
+              className="ortur-impact__back"
+              type="button"
+              onClick={onBackToCorridor}
+            >
+              <span className="ortur-impact__back-arrow" aria-hidden="true">←</span>
+              <span className="ortur-impact__back-label">回到走廊</span>
+            </button>
+          </div>
+        ) : null}
       </section>
     </main>
   );

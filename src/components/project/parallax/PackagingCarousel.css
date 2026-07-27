@@ -1,0 +1,123 @@
+.packaging-carousel {
+  box-sizing: border-box;
+}
+
+.packaging-carousel__stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+
+.packaging-carousel__figure {
+  margin: 0;
+  min-width: 0;
+}
+
+.packaging-carousel__frame {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 14px;
+  background: #0a0a0a;
+}
+
+.packaging-carousel__frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: packaging-carousel-fade-in 0.32s ease;
+}
+
+@keyframes packaging-carousel-fade-in {
+  from {
+    opacity: 0.35;
+    transform: scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.packaging-carousel__caption {
+  margin: 0.75rem 0 0;
+  font-family: Arial, 'Helvetica Neue', 'Noto Sans SC', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 0.62);
+  text-align: center;
+}
+
+.packaging-carousel__btn {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: clamp(40px, 4vw, 48px);
+  height: clamp(40px, 4vw, 48px);
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.45);
+  color: rgb(255 255 255 / 0.82);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.packaging-carousel__btn--prev {
+  left: clamp(10px, 1.5vw, 18px);
+}
+
+.packaging-carousel__btn--next {
+  right: clamp(10px, 1.5vw, 18px);
+}
+
+.packaging-carousel__btn span {
+  font-size: clamp(24px, 3vw, 30px);
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.packaging-carousel__btn:hover {
+  background: rgb(0 0 0 / 0.65);
+  border-color: rgb(255 255 255 / 0.28);
+}
+
+.packaging-carousel__btn:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 0.65);
+  outline-offset: 3px;
+}
+
+.packaging-carousel__dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: clamp(16px, 2vw, 22px);
+}
+
+.packaging-carousel__dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.24);
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.packaging-carousel__dot.is-active {
+  background: rgb(255 255 255 / 0.88);
+  transform: scale(1.15);
+}
+
+@media (max-width: 640px) {
+  .packaging-carousel__btn {
+    display: none;
+  }
+}

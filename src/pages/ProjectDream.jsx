@@ -143,6 +143,7 @@ export default function ProjectDream({ project, dreamLayoutReady = true, onBackT
       <ProjectSeerCaseStudy
         project={project}
         content={content}
+        dreamLayoutReady={dreamLayoutReady}
         onBackToCorridor={onBackToCorridor}
         onWakeUp={onWakeUp}
       />
@@ -226,14 +227,27 @@ export default function ProjectDream({ project, dreamLayoutReady = true, onBackT
 
         <footer className="project-editorial-footer">
           <div className="project-editorial-footer__rule" aria-hidden="true" />
-          <div className="project-editorial-footer__closing">
-            {project01EndingParagraphs.map((line, index) => (
-              index === project01EndingParagraphs.length - 1 ? (
-                <p key={line} className="project-editorial-footer__final">{line}</p>
-              ) : (
-              <p key={line}>{line}</p>
-              )
-            ))}
+          <div className="project-editorial-footer__layout">
+            <div className="project-editorial-footer__closing">
+              {project01EndingParagraphs.map((line, index) => (
+                index === project01EndingParagraphs.length - 1 ? (
+                  <p key={line} className="project-editorial-footer__final">{line}</p>
+                ) : (
+                <p key={line}>{line}</p>
+                )
+              ))}
+            </div>
+
+            <div className="project-editorial-footer__actions">
+              <button
+                className="project-editorial-footer__back"
+                type="button"
+                onClick={onBackToCorridor}
+              >
+                <span className="project-editorial-footer__back-arrow" aria-hidden="true">←</span>
+                <span className="project-editorial-footer__back-label">回到走廊</span>
+              </button>
+            </div>
           </div>
         </footer>
       </main>

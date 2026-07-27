@@ -4,9 +4,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const INTRO_COPY = {
-  eyebrow: 'FINDING STONE',
+  eyebrow: 'STONE STORY',
   title: '挖开矿石，遇见宝石',
-  lead: '儿童「挖掘寻宝」宝石科普玩具品牌——把动手能力、宝石认知与科普知识，做成一套可玩的玩具体验。',
+  lead: [
+    '儿童「挖掘寻宝」宝石科普玩具品牌。',
+    '通过挖掘与探索，发现隐藏其中的宝石与自然奥秘，开启孩子的寻宝冒险。',
+  ],
 };
 
 /**
@@ -18,7 +21,6 @@ export function initIntroDwellScroll(scroller) {
   const introRunway = document.querySelector('.scroll-intro');
   const stage = document.querySelector('.intro-dwell-stage');
   const actor = document.querySelector('#brand-intro-actor');
-  const intro = document.querySelector('#brand-intro');
   if (!introRunway || !stage || !actor) {
     return () => {};
   }
@@ -40,7 +42,7 @@ export function initIntroDwellScroll(scroller) {
   );
 
   const tween = gsap.to(actor, {
-    y: 90,
+    y: 100,
     opacity: 1,
     ease: 'none',
     scrollTrigger: {
@@ -53,24 +55,11 @@ export function initIntroDwellScroll(scroller) {
     },
   });
 
-  if (intro) {
-    triggers.push(
-      ScrollTrigger.create({
-        ...stBase,
-        trigger: intro,
-        start: 'top bottom',
-        onEnter: () => intro.classList.add('is-revealed'),
-        onLeaveBack: () => intro.classList.remove('is-revealed'),
-      }),
-    );
-  }
-
   return () => {
     triggers.forEach((st) => st.kill());
     tween.scrollTrigger?.kill();
     tween.kill();
     stage.classList.remove('is-active');
-    intro?.classList.remove('is-revealed');
   };
 }
 
